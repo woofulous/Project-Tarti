@@ -3,6 +3,10 @@
   "name": "Project-Tarti",
   "tree": {
     "$className": "DataModel",
+    "Workspace": {
+      "$className": "Workspace",
+      "$path": "src/Workspace"
+    },
     "ReplicatedFirst": {
       "$className": "ReplicatedFirst",
       "$path": "src/ReplicatedFirst"
