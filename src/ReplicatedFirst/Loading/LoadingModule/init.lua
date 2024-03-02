@@ -1,4 +1,8 @@
+local ContentProvider = game:GetService("ContentProvider")
+
 local Knit = require(game:GetService("ReplicatedStorage"):WaitForChild("Packages").Knit)
+
+local PreloadList = require(script.Parent.PreloadList)
 
 local LoadingModule = {}
 LoadingModule.instance = script.LoadingScreen
@@ -11,6 +15,15 @@ end
 
 function LoadingModule.startPreloadingAsync()
 	print("start preloading assets")
+	for _, asset in PreloadList do
+		local success, loadResult = pcall(function()
+			return ContentProvider:PreloadAsync(asset)
+		end)
+
+		if not success then
+			warn("failed to preload asset (asset_id, result)", asset, loadResult)
+		end
+	end
 end
 
 function LoadingModule:ToggleVisible(visible: boolean)
