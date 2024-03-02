@@ -1,4 +1,5 @@
 {
+  "emitLegacyScripts": false,
   "name": "Project-Tarti",
   "tree": {
     "$className": "DataModel",
