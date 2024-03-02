@@ -28,6 +28,6 @@ version = "2.0.1"
 dependencies = []
 
 [[package]]
-name = "knit-template"
+name = "project-tarti"
 version = "0.1.0"
 dependencies = [["Knit", "sleitnick/knit@1.7.0"]]
