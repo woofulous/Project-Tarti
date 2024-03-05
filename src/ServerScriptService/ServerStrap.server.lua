@@ -1,5 +1,6 @@
 --[[
 	Server boostrapper
+	redone by woofulous (Lucereus) 03/04/2024
 ]]
 
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -18,6 +19,7 @@ end
 for _, module in ServerScriptService.Services:GetDescendants() do
 	if module:IsA("ModuleScript") then
 		local service = SafeRequireModule(module)
+		assert(service.Name, "Service must have 'Name'!")
 		Knit.CreateService(service)
 	end
 end

@@ -18,6 +18,10 @@
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$path": "src/ServerScriptService"
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$path": "src/ServerStorage"
     }
   }
 }
