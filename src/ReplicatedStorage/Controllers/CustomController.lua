@@ -6,6 +6,7 @@
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 
 local CustomizationList = {} -- a list of all possible accessories, uniforms, cosmetics, and all else the player can wear
+local root = nil
 
 local CustomController = {
 	Name = "CustomController",
@@ -21,6 +22,9 @@ function CustomController:ToggleOpen(open: boolean)
 end
 
 function CustomController:KnitStart()
+	local Interface = Knit.GetController("Interface")
+	root = Interface.root
+
 	local CustomService = Knit.GetService("CustomService")
 
 	CustomService:GetPossibleCustomization():andThen(function(list) -- wait for Promise to pass the CustomizationList

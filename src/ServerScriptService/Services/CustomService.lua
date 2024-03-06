@@ -28,7 +28,7 @@ local CustomService = {
 }
 CustomService.UniformBreakdown = {}
 
--- Return a list of possible uniforms the person can wear
+-- Return a list of possible uniforms the person can wear. Used to fill the client's cosmetic options
 function CustomService.Client:GetPossibleCustomization(player: Player)
 	local groups = GroupHandler:GetGroups(player)
 	local customizationList = {
@@ -57,7 +57,19 @@ function CustomService.Client:GetPossibleCustomization(player: Player)
 	return customizationList :: { [CustomizationKind]: { accessory_name: string } }
 end
 
-function CustomService:SetCustomization(player: Player, kind: CustomizationKind, uniformList: UniformList) end
+function CustomService.Client:SaveNewCustomization(player: Player, customizationList: { UniformList | CosmeticList })
+	print("saving players customizationList:", player, customizationList)
+end
+
+function CustomService:GetSavedCustomization(player: Player)
+	return DataHandler:Get(player, "Uniform")
+end
+
+function CustomService:SetCustomization(player: Player)
+	local customizationList = self:GetSavedCustomization(player)
+
+	print("cloning & parenting all items in CustomizationList to the player:", player)
+end
 
 function CustomService:KnitInit()
 	safePlayerAdded(function(player: Player)
