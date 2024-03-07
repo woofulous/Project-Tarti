@@ -20,24 +20,31 @@ local NonPlayerCharacter = Component.new({
 })
 
 -- create a table filled with all of the choice's properties for easy access
-function CreateChoiceTree(choice: DialogChoice)
+function CreateChoiceTree(choice: DialogChoice | ModuleScript)
 	local tree = {}
-	tree.userChoices = { choice.UserDialog }
-	tree.response = choice.ResponseDialog
 
-	if choice.GoodbyeChoiceActive then
-		if choice.GoodbyeDialog ~= "" then -- dialogchoices dont have a nil property if there is no text in the field
-			tree.goodbye = choice.GoodbyeDialog
-		else
-			tree.goodbye = DEFAULT_GOODBYE
+	if choice:IsA("DialogChoice") then
+		tree.userChoices = { choice.UserDialog }
+		tree.response = choice.ResponseDialog
+
+		if choice.GoodbyeChoiceActive then
+			if choice.GoodbyeDialog ~= "" then -- dialogchoices dont have a nil property if there is no text in the field
+				tree.goodbye = choice.GoodbyeDialog
+			else
+				tree.goodbye = DEFAULT_GOODBYE
+			end
 		end
+	elseif choice:IsA("ModuleScript") then
+		tree.callback = require(choice)
+	else
+		warn("unk instance type:", choice)
 	end
 
 	return tree
 end
 
 -- recursively go through all descendants and construct the dialog tree
-local function processChoice(choice)
+local function processChoice(choice: Dialog)
 	local choiceTree = CreateChoiceTree(choice)
 	local choiceChildren = choice:GetChildren()
 
@@ -88,7 +95,7 @@ function NonPlayerCharacter:Construct()
 		self.dialogTree.goodbye = DEFAULT_GOODBYE
 	end
 
-	for _, choice in ipairs(dialog:GetDescendants()) do -- go thru all descendants and create a new tree for each
+	for _, choice: DialogChoice in ipairs(dialog:GetDescendants()) do -- go thru all descendants and create a new tree for each
 		table.insert(self.dialogTree.userChoices, processChoice(choice))
 	end
 
