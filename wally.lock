@@ -3,6 +3,11 @@
 registry = "test"
 
 [[package]]
+name = "elttob/fusion"
+version = "0.2.0"
+dependencies = []
+
+[[package]]
 name = "evaera/promise"
 version = "4.0.0"
 dependencies = []
@@ -80,4 +85,4 @@ dependencies = []
 [[package]]
 name = "thast/project-tarti"
 version = "0.1.0"
-dependencies = [["Comm", "sleitnick/comm@1.0.1"], ["Component", "sleitnick/component@2.4.8"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Input", "sleitnick/input@2.3.0"], ["Knit", "sleitnick/knit@1.7.0"], ["Option", "sleitnick/option@1.0.5"], ["Promise", "evaera/promise@4.0.0"], ["Streamable", "sleitnick/streamable@1.2.4"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["Trove", "sleitnick/trove@1.1.0"]]
+dependencies = [["Comm", "sleitnick/comm@1.0.1"], ["Component", "sleitnick/component@2.4.8"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Fusion", "elttob/fusion@0.2.0"], ["Input", "sleitnick/input@2.3.0"], ["Knit", "sleitnick/knit@1.7.0"], ["Option", "sleitnick/option@1.0.5"], ["Promise", "evaera/promise@4.0.0"], ["Streamable", "sleitnick/streamable@1.2.4"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["Trove", "sleitnick/trove@1.1.0"]]

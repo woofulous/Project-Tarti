@@ -1,19 +1,35 @@
 --[[
-	This is the middleman between NonPlayerCharacter components and the DialogController
+	Set up all NPCs to ensure they work for the client to access via NonPlayerCharacter component
 ]]
 
-local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
+local NPC_TAG = "NonPlayerCharacter" -- should resemble Components.NonPlayerCharacter
+
+local CollectionService = game:GetService("CollectionService")
 
 local NPCService = {
 	Name = "NPCService",
-	Client = {
-		SpeakToNPC = Knit.CreateSignal(),
-	},
+	Client = {},
 }
 
--- The player has triggered the prompt tied to NonPlayerCharacter's
-function NPCService:PlayerTriggeredNPC(player: Player, npc: Model)
-	self.Client.SpeakToNPC:Fire(player, npc)
+function setupNPC(npc: Model)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Talk to"
+	prompt.ObjectText = npc.Name
+	prompt.Style = Enum.ProximityPromptStyle.Custom
+	prompt.Parent = npc
+
+	local ikControl = Instance.new("IKControl")
+	ikControl.SmoothTime = 0.5
+	ikControl.Type = Enum.IKControlType.LookAt
+	ikControl.EndEffector = npc.Head.FaceFrontAttachment
+	ikControl.ChainRoot = npc.Head.FaceCenterAttachment
+	ikControl.Parent = npc
+end
+
+function NPCService:KnitInit()
+	for _, npc: Model in CollectionService:GetTagged(NPC_TAG) do
+		setupNPC(npc)
+	end
 end
 
 return NPCService

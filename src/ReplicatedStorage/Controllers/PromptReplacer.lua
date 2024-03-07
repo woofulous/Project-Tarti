@@ -8,6 +8,8 @@
 
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
+local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
+
 local PromptReplacer = {
 	Name = "PromptReplacer",
 }
@@ -25,7 +27,9 @@ local function getPromptGui()
 	return prompt
 end
 
-function PromptReplacer:KnitInit()
+function PromptReplacer:KnitStart()
+	local Interface = Knit.GetController("Interface")
+
 	ProximityPromptService.PromptShown:Connect(
 		function(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInputType)
 			if prompt.Style ~= Enum.ProximityPromptStyle.Custom then -- Prompt is using the "Default" style. Avoid tampering
@@ -35,7 +39,7 @@ function PromptReplacer:KnitInit()
 			print("Show the prompt")
 			local promptGui = getPromptGui()
 			promptGui.Adornee = prompt.Parent -- set the custom prompt Gui to the prompt's parent
-			promptGui.Parent = prompt.Parent
+			promptGui.Parent = Interface.root
 
 			-- We can connect a .PromptHidden event internally to avoid using the service's event. This is a more direct way to hide the prompt, avoiding potential overfiring
 			prompt.PromptHidden:Once(function()
