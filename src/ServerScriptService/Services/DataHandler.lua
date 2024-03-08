@@ -8,8 +8,8 @@ local DATA_TEMPLATE = {
 	ProfileVersion = 1,
 	Marks = 50,
 	Uniform = {
-		["Accessories"] = {},
-		["Cufftitles"] = {},
+		["EyeWear"] = {},
+		["CuffTitle"] = {},
 		["Hair"] = {},
 		["Helmet"] = {},
 		["Uniform"] = {},
@@ -30,6 +30,8 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 local safePlayerAdded = require(ReplicatedStorage.Utility.safePlayerAdded)
 
 local experienceStore = game:GetService("DataStoreService"):GetDataStore("ExperienceData")
+
+local isStudio = game:GetService("RunService"):IsStudio()
 
 export type PlayerStore = { UserId: number, Data: {} }
 export type GameData = { { PlayerStore } }
@@ -60,6 +62,10 @@ end
 
 -- Return a Promise which calls SetAsync on the player to save data
 function SavePlayerData(player: Player)
+	if isStudio then
+		return warn("Tried to SavePlayerData, but cannot in Studio!")
+	end
+
 	local playerStore = DataHandler.GameData[player.UserId]
 
 	if playerStore then
@@ -198,6 +204,12 @@ function DataHandler:Set(player: Player, scope: string, value: any?)
 end
 
 function DataHandler:KnitInit()
+	if isStudio then
+		warn("DataHandler will not save in Studio. Session data will be lost.")
+	else
+		warn("DataHandler ready to start saving!")
+	end
+
 	local Players = game:GetService("Players")
 
 	-- initialize players

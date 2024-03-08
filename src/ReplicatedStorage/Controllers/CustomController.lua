@@ -3,6 +3,8 @@
 	It fetches possible uniforms from the server for the client to use, then passes those back via event firing to equip uniforms, etc
 ]]
 
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 
 local CustomizationList = {} -- a list of all possible accessories, uniforms, cosmetics, and all else the player can wear
@@ -14,8 +16,10 @@ local CustomController = {
 CustomController.instance = script.CustomGui
 
 function CustomController:ToggleOpen(open: boolean)
+	ProximityPromptService.Enabled = not open
+
 	if open then
-		self.instance.Parent = Knit.Player.PlayerGui
+		self.instance.Parent = root
 	else
 		self.instance.Parent = script
 	end
