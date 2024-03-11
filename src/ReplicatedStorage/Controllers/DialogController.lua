@@ -2,51 +2,114 @@
 	This listens for events from the NPCService to start talking to an NPC and prepares then fires events back to the server through ModuleScripts located in the DialogTree
 ]]
 
+type dialogTree = {
+	response: string,
+	goodbye: string,
+	user: string,
+	userChoices: { dialogTree },
+	action: string,
+	callback: () -> ()?,
+}
+
 local TweenService = game:GetService("TweenService")
+local TextChatService = game:GetService("TextChatService")
 
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 
 local choicePrefab = script.DialogChoiceButton :: TextButton
-local slideInfo = TweenInfo.new()
+local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
 
-local currentTree = nil
-local root = nil -- set to Interface.root
+local npcBubblePart: BasePart
+local root: ScreenGui -- set to Interface.root
 
 local DialogController = {
 	Name = "DialogController",
 }
 DialogController.instance = script.DialogFrame
+DialogController._buttons = {}
 
 function CreateChoiceButton(text: string, callback: () -> ())
 	local button = choicePrefab:Clone()
 	button.Text = text
-	button.Activated:Connect(callback)
+	button.Activated:Once(callback)
+
+	table.insert(DialogController._buttons, button)
+	button.Parent = DialogController.instance.ChoiceOptions
+	return button
+end
+
+local function clearCurrentTree()
+	for _, button: TextButton in DialogController._buttons do
+		button:Destroy()
+	end
+end
+
+local function fillChoiceTree(tree: dialogTree)
+	print("speak for the npc:", tree.response)
+	TextChatService:DisplayBubble(npcBubblePart, tree.response)
+	clearCurrentTree()
+	print(tree)
+
+	for _, choice: dialogTree in tree.userChoices do
+		print(choice)
+
+		local button = CreateChoiceButton(choice.user, function()
+			print("speak for the user:", choice.user)
+			TextChatService:DisplayBubble(Knit.Player.Character, choice.user)
+
+			if choice.action == "Close" then
+				DialogController:CloseDialogScreen()
+			elseif choice.action == "Continue" then
+				clearCurrentTree()
+				fillChoiceTree(choice)
+			else
+				print("unk actionType:", choice.action, choice)
+			end
+		end)
+
+		if choice.callback then
+			print("callback!")
+			button.Activated:Once(choice.callback) -- this is for modulescripts
+		end
+	end
+
+	CreateChoiceButton(tree.goodbye, function() -- no need to access this return
+		print("say goodbye:", tree.goodbye)
+		TextChatService:DisplayBubble(Knit.Player.Character, tree.goodbye)
+
+		DialogController:CloseDialogScreen()
+	end)
 end
 
 -- Hides all prompts & springs the camera to the set NPC. Yields until completion
-function DialogController.speakToNPCAsync(
-	npc: Model,
-	dialogTree: { response: string, goodbye: string, user: string, userChoices: {} }
-)
+function DialogController.speakToNPCAsync(npc: Model, dialogTree: dialogTree)
 	print("speak to npc:", npc)
-	currentTree = dialogTree
-	DialogController:OpenScreen()
+	assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
+	npcBubblePart = npc.PrimaryPart
+
+	DialogController:OpenScreen(dialogTree)
 end
 
 -- Tween open the interface
-function DialogController:OpenScreen()
-	print("opening screen while currentTree is:", currentTree)
+function DialogController:OpenScreen(dialogTree: dialogTree)
+	print("opening screen while currentTree is:", dialogTree)
 	self.instance.Parent = root
+
 	local slideIn = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 1) })
+
+	fillChoiceTree(dialogTree)
 	slideIn:Play()
 end
 
 -- Tween close the interface
 function DialogController:CloseDialogScreen()
 	local slideOut = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 0) })
+
 	slideOut.Completed:Connect(function()
 		self.instance.Parent = script
+		clearCurrentTree()
 	end)
+
 	slideOut:Play()
 	print("return camera to normal")
 end

@@ -6,6 +6,7 @@
 
 local DEFAULT_GOODBYE = "Goodbye!"
 
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -24,8 +25,9 @@ function CreateChoiceTree(choice: DialogChoice | ModuleScript)
 	local tree = {}
 
 	if choice:IsA("DialogChoice") then
-		tree.userChoices = { choice.UserDialog }
 		tree.response = choice.ResponseDialog
+		tree.user = choice.UserDialog
+		tree.userChoices = {} -- empty table to fill more choices
 
 		if choice.GoodbyeChoiceActive then
 			if choice.GoodbyeDialog ~= "" then -- dialogchoices dont have a nil property if there is no text in the field
@@ -34,8 +36,22 @@ function CreateChoiceTree(choice: DialogChoice | ModuleScript)
 				tree.goodbye = DEFAULT_GOODBYE
 			end
 		end
-	elseif choice:IsA("ModuleScript") then
-		tree.callback = require(choice)
+
+		local module = choice:FindFirstChildOfClass("ModuleScript")
+		if module then
+			tree.callback = require(module)
+		end
+
+		local actionType = choice:GetAttribute("Action") -- defaults
+		if not actionType then
+			if module then
+				tree.action = "Close" -- by default, if there is a module, close
+			else
+				tree.action = "Continue" -- by default, continue
+			end
+		else
+			tree.action = actionType
+		end
 	else
 		warn("unk instance type:", choice)
 	end
@@ -44,7 +60,7 @@ function CreateChoiceTree(choice: DialogChoice | ModuleScript)
 end
 
 -- recursively go through all descendants and construct the dialog tree
-local function processChoice(choice: Dialog)
+local function processChoice(choice: DialogChoice)
 	local choiceTree = CreateChoiceTree(choice)
 	local choiceChildren = choice:GetChildren()
 
@@ -95,7 +111,8 @@ function NonPlayerCharacter:Construct()
 		self.dialogTree.goodbye = DEFAULT_GOODBYE
 	end
 
-	for _, choice: DialogChoice in ipairs(dialog:GetDescendants()) do -- go thru all descendants and create a new tree for each
+	for _, choice: DialogChoice in ipairs(dialog:GetChildren()) do -- go thru all children to start creating a new tree for each of the descendants
+		print(choice)
 		table.insert(self.dialogTree.userChoices, processChoice(choice))
 	end
 
@@ -106,10 +123,9 @@ function NonPlayerCharacter:Start()
 	local DialogController = Knit.GetController("DialogController")
 
 	self.prompt.Triggered:Connect(function() -- main startup for npcs
+		ProximityPromptService.Enabled = false
 		DialogController.speakToNPCAsync(self.Instance, self.dialogTree)
 	end)
 end
-
-function NonPlayerCharacter:Stop() end
 
 return NonPlayerCharacter

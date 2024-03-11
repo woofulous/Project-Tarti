@@ -11,19 +11,16 @@ function PreGameLoaded()
 	LoadingModule:ToggleVisible(true)
 	LoadingModule:UpdateStatusText("Waiting for game")
 
-	task.wait(2)
 	if not game:IsLoaded() then
 		game.Loaded:Wait()
 	end
 
 	LoadingModule:UpdateStatusText("Waiting for framework")
-	task.wait(2)
 	LoadingModule.awaitForKnit()
 end
 
 function PostTasksComplete()
 	LoadingModule:UpdateStatusText("Preloading assets")
-	task.wait(2)
 	LoadingModule.startPreloadingAsync() -- begin the skippable preload process
 
 	print("Loading has completed!")
