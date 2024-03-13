@@ -5,8 +5,8 @@
 ]]
 
 local DEFAULT_GOODBYE = "Goodbye!"
+local TALK_COOLDOWN = 5
 
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -52,7 +52,9 @@ function CreateChoiceTree(choice: DialogChoice | ModuleScript)
 		else
 			tree.action = actionType
 		end
-	else
+	elseif choice:IsA("ModuleScript") then
+		print("module")
+	else --elseif not choice:IsA("ModuleScript") then
 		warn("unk instance type:", choice)
 	end
 
@@ -76,27 +78,30 @@ local function processChoice(choice: DialogChoice)
 end
 
 function NonPlayerCharacter:Construct()
+	assert(self.Instance.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
+
 	self.prompt = self.Instance:FindFirstChildOfClass("ProximityPrompt") :: ProximityPrompt
-	self.ikControl = self.Instance:FindFirstChildOfClass("IKControl") :: IKControl
+	self.hasSpokenCooldown = false
+	-- self.ikControl = self.Instance:FindFirstChildOfClass("IKControl") :: IKControl
 	-- npc "looking" (when in range of the prompt, set IKControl target to the player)
-	local fallbackTarget = Instance.new("Attachment") -- create a new target for the npc to fallback to when there is none
-	fallbackTarget.CFrame = CFrame.new(0, 1.5, -1) -- 1 stud infront of the npc's head
-	fallbackTarget.Parent = self.Instance:WaitForChild("HumanoidRootPart")
-	self.ikControl.Target = fallbackTarget
+	-- local fallbackTarget = Instance.new("Attachment") -- create a new target for the npc to fallback to when there is none
+	-- fallbackTarget.CFrame = CFrame.new(0, 1.5, -1) -- 1 stud infront of the npc's head
+	-- fallbackTarget.Parent = self.Instance:WaitForChild("HumanoidRootPart")
+	-- self.ikControl.Target = fallbackTarget
 
-	self.prompt.PromptShown:Connect(function() -- lookAtPlayer
-		local character = Knit.Player.Character
-		if not character or not character.Head then
-			return -- cannot look, no character to look at, or the player head doesnt exist
-		end
+	-- self.prompt.PromptShown:Connect(function() -- lookAtPlayer
+	-- 	local character = Knit.Player.Character
+	-- 	if not character or not character.Head then
+	-- 		return -- cannot look, no character to look at, or the player head doesnt exist
+	-- 	end
 
-		self.ikControl.Target = character.Head
+	-- 	self.ikControl.Target = character.Head
 
-		-- internally disconnect the look event
-		self.prompt.PromptHidden:Connect(function()
-			self.ikControl.Target = fallbackTarget -- revert the look stance to normal
-		end)
-	end)
+	-- 	-- internally disconnect the look event
+	-- 	self.prompt.PromptHidden:Connect(function()
+	-- 		self.ikControl.Target = fallbackTarget -- revert the look stance to normal
+	-- 	end)
+	-- end)
 	-- construct convo tree (this one a lil tricky)
 	local dialog = self.Instance:FindFirstChildOfClass("Dialog") :: Dialog
 	self.prompt.MaxActivationDistance = dialog.ConversationDistance
@@ -105,7 +110,7 @@ function NonPlayerCharacter:Construct()
 	self.dialogTree.response = dialog.InitialPrompt
 	self.dialogTree.userChoices = {}
 
-	if dialog.GoodbyeDialog == "" then -- ensure the player can actually exit dialog
+	if string.len(dialog.GoodbyeDialog) > 1 then -- ensure the player can actually exit dialog
 		self.dialogTree.goodbye = dialog.GoodbyeDialog
 	else
 		self.dialogTree.goodbye = DEFAULT_GOODBYE
@@ -123,8 +128,15 @@ function NonPlayerCharacter:Start()
 	local DialogController = Knit.GetController("DialogController")
 
 	self.prompt.Triggered:Connect(function() -- main startup for npcs
-		ProximityPromptService.Enabled = false
-		DialogController.speakToNPCAsync(self.Instance, self.dialogTree)
+		if not self.hasSpokenCooldown then
+			DialogController.speakToNPCAsync(self.Instance, self.dialogTree)
+
+			self.hasSpokenCooldown = true
+			self.prompt.Enabled = false
+			task.wait(TALK_COOLDOWN)
+			self.hasSpokenCooldown = false
+			self.prompt.Enabled = true
+		end
 	end)
 end
 

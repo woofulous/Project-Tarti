@@ -1,5 +1,6 @@
 --[[
 	This listens for events from the NPCService to start talking to an NPC and prepares then fires events back to the server through ModuleScripts located in the DialogTree
+	lucereus (03/11/2024)
 ]]
 
 type dialogTree = {
@@ -13,13 +14,14 @@ type dialogTree = {
 
 local TweenService = game:GetService("TweenService")
 local TextChatService = game:GetService("TextChatService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 
 local choicePrefab = script.DialogChoiceButton :: TextButton
 local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
 
-local npcBubblePart: BasePart
+local npcBubblePart: BasePart | nil
 local root: ScreenGui -- set to Interface.root
 
 local DialogController = {
@@ -50,6 +52,10 @@ local function fillChoiceTree(tree: dialogTree)
 	clearCurrentTree()
 	print(tree)
 
+	if #tree.userChoices == 0 then -- similar to choice.action == "Close"
+		DialogController:CloseDialogScreen()
+	end
+
 	for _, choice: dialogTree in tree.userChoices do
 		print(choice)
 
@@ -64,6 +70,7 @@ local function fillChoiceTree(tree: dialogTree)
 				fillChoiceTree(choice)
 			else
 				print("unk actionType:", choice.action, choice)
+				DialogController:CloseDialogScreen() -- so the player isnt caught in a broken dialog
 			end
 		end)
 
@@ -84,7 +91,6 @@ end
 -- Hides all prompts & springs the camera to the set NPC. Yields until completion
 function DialogController.speakToNPCAsync(npc: Model, dialogTree: dialogTree)
 	print("speak to npc:", npc)
-	assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
 	npcBubblePart = npc.PrimaryPart
 
 	DialogController:OpenScreen(dialogTree)
@@ -94,6 +100,7 @@ end
 function DialogController:OpenScreen(dialogTree: dialogTree)
 	print("opening screen while currentTree is:", dialogTree)
 	self.instance.Parent = root
+	ProximityPromptService.Enabled = false
 
 	local slideIn = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 1) })
 
@@ -106,10 +113,11 @@ function DialogController:CloseDialogScreen()
 	local slideOut = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 0) })
 
 	slideOut.Completed:Connect(function()
-		self.instance.Parent = script
 		clearCurrentTree()
 	end)
 
+	ProximityPromptService.Enabled = true
+	npcBubblePart = nil
 	slideOut:Play()
 	print("return camera to normal")
 end
