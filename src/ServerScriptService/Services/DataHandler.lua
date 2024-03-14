@@ -17,11 +17,7 @@ local DATA_TEMPLATE = {
 	},
 	Guns = {},
 
-	Settings = {
-		Group = 15294045,
-		LocalNametag = true,
-		KillFeed = true,
-	},
+	FirstTimePlayer = true,
 }
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -85,6 +81,16 @@ function SavePlayerData(player: Player)
 	else
 		return warn("Data failed to save, either due to no player data or save not ready")
 	end
+end
+
+-- client methods
+
+function DataHandler.Client.Get(player: Player, scope: any)
+	if typeof(scope) ~= "string" or not DATA_TEMPLATE[scope] then
+		return warn(player.UserId, "tried to Get with incorrect arguments. Suspicious behavior")
+	end
+
+	return DataHandler:Get(player, scope)
 end
 
 -- Fetch the player's data, reconcile "out of line" data and add player to GameData to be used

@@ -210,7 +210,7 @@ end
 
 -- Return a list of possible uniforms the person can wear. Used to fill the client's cosmetic options
 function CustomService.Client:GetPossibleCustomization(player: Player)
-	local groups = GroupHandler:GetGroups(player)
+	local groups = GroupHandler:GetGroupsAsync(player)
 	local customizationList = { -- this is what we get from DataHandler template
 		Uniform = {},
 		Webbing = {},
@@ -279,41 +279,6 @@ function CustomService:SetCustomization(player: Player)
 end
 
 function CustomService:KnitInit()
-	safePlayerAdded(function(player: Player)
-		player.CharacterAppearanceLoaded:Connect(function(character: Model)
-			local shirt = character:WaitForChild("Shirt", 3)
-
-			if not shirt then -- no need to check if pants dont exist, roblox ensures they do
-				shirt = Instance.new("Shirt")
-				shirt.Name = "Shirt"
-				shirt.Parent = character
-			end
-
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			local humanoidDescription = humanoid:GetAppliedDescription()
-
-			if not table.find({ 4279033527, 31716920 }, player.UserId) then
-				humanoidDescription.Head = 0
-			end
-
-			humanoidDescription.LeftArm = 0
-			humanoidDescription.RightArm = 0
-			humanoidDescription.LeftLeg = 0
-			humanoidDescription.RightLeg = 0
-			humanoidDescription.Torso = 0
-			humanoid:ApplyDescription(humanoidDescription)
-
-			self.runtimeAccessories[player.UserId] = {}
-			self.initialAccessories[player.UserId] = {
-				Accessories = humanoid:GetAccessories(),
-				shirtTemplate = shirt.ShirtTemplate,
-				pantsTemplate = character.Pants.PantsTemplate, -- pants will always exist
-			}
-
-			self:SetCustomization(player)
-		end)
-	end)
-
 	-- Categorize all of the accessories in storage. Forewarning; CustomCategory should be the EXACT name as the export type CustomizationKind
 	for _, customCategory in pairs(CustomizationFolder:GetChildren()) do
 		local customGroup = {} -- This is the "Hair" or "Helmet" folder, broken down
@@ -364,6 +329,42 @@ function CustomService:KnitInit()
 	end
 
 	print(self.UniformBreakdown)
+
+	safePlayerAdded(function(player: Player)
+		player.CharacterAppearanceLoaded:Connect(function(character: Model)
+			local pants = character:WaitForChild("Pants", 3) -- should always return
+			local shirt = character:WaitForChild("Shirt", 3)
+
+			if not shirt then -- no need to check if pants dont exist, roblox ensures they do
+				shirt = Instance.new("Shirt")
+				shirt.Name = "Shirt"
+				shirt.Parent = character
+			end
+
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local humanoidDescription = humanoid:GetAppliedDescription()
+
+			if not table.find({ 4279033527, 31716920 }, player.UserId) then
+				humanoidDescription.Head = 0
+			end
+
+			humanoidDescription.LeftArm = 0
+			humanoidDescription.RightArm = 0
+			humanoidDescription.LeftLeg = 0
+			humanoidDescription.RightLeg = 0
+			humanoidDescription.Torso = 0
+			humanoid:ApplyDescription(humanoidDescription)
+
+			self.runtimeAccessories[player.UserId] = {}
+			self.initialAccessories[player.UserId] = {
+				Accessories = humanoid:GetAccessories(),
+				shirtTemplate = shirt.ShirtTemplate,
+				pantsTemplate = pants.PantsTemplate, -- pants will always exist
+			}
+
+			self:SetCustomization(player)
+		end)
+	end)
 end
 
 return CustomService

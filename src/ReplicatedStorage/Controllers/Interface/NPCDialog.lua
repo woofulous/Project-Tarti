@@ -1,6 +1,5 @@
 --[[
 	This listens for events from the NPCService to start talking to an NPC and prepares then fires events back to the server through ModuleScripts located in the DialogTree
-	lucereus (03/11/2024)
 ]]
 
 type dialogTree = {
@@ -14,34 +13,32 @@ type dialogTree = {
 
 local TweenService = game:GetService("TweenService")
 local TextChatService = game:GetService("TextChatService")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 
 local choicePrefab = script.DialogChoiceButton :: TextButton
 local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
 
-local npcBubblePart: BasePart | nil
-local root: ScreenGui -- set to Interface.root
+local npcBubblePart: BasePart
 
-local DialogController = {
-	Name = "DialogController",
+local NPCDialog = {
+	Name = "NPCDialog",
 }
-DialogController.instance = script.DialogFrame
-DialogController._buttons = {}
+NPCDialog.instance = script.DialogFrame
+NPCDialog._buttons = {}
 
 function CreateChoiceButton(text: string, callback: () -> ())
 	local button = choicePrefab:Clone()
 	button.Text = text
 	button.Activated:Once(callback)
 
-	table.insert(DialogController._buttons, button)
-	button.Parent = DialogController.instance.ChoiceOptions
+	table.insert(NPCDialog._buttons, button)
+	button.Parent = NPCDialog.instance.ChoiceOptions
 	return button
 end
 
 local function clearCurrentTree()
-	for _, button: TextButton in DialogController._buttons do
+	for _, button: TextButton in NPCDialog._buttons do
 		button:Destroy()
 	end
 end
@@ -52,10 +49,6 @@ local function fillChoiceTree(tree: dialogTree)
 	clearCurrentTree()
 	print(tree)
 
-	if #tree.userChoices == 0 then -- similar to choice.action == "Close"
-		DialogController:CloseDialogScreen()
-	end
-
 	for _, choice: dialogTree in tree.userChoices do
 		print(choice)
 
@@ -64,13 +57,12 @@ local function fillChoiceTree(tree: dialogTree)
 			TextChatService:DisplayBubble(Knit.Player.Character, choice.user)
 
 			if choice.action == "Close" then
-				DialogController:CloseDialogScreen()
+				NPCDialog:CloseDialogScreen()
 			elseif choice.action == "Continue" then
 				clearCurrentTree()
 				fillChoiceTree(choice)
 			else
 				print("unk actionType:", choice.action, choice)
-				DialogController:CloseDialogScreen() -- so the player isnt caught in a broken dialog
 			end
 		end)
 
@@ -84,23 +76,23 @@ local function fillChoiceTree(tree: dialogTree)
 		print("say goodbye:", tree.goodbye)
 		TextChatService:DisplayBubble(Knit.Player.Character, tree.goodbye)
 
-		DialogController:CloseDialogScreen()
+		NPCDialog:CloseDialogScreen()
 	end)
 end
 
 -- Hides all prompts & springs the camera to the set NPC. Yields until completion
-function DialogController.speakToNPCAsync(npc: Model, dialogTree: dialogTree)
+function NPCDialog.speakToNPCAsync(npc: Model, dialogTree: dialogTree)
 	print("speak to npc:", npc)
+	assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
 	npcBubblePart = npc.PrimaryPart
 
-	DialogController:OpenScreen(dialogTree)
+	NPCDialog:OpenScreen(dialogTree)
 end
 
 -- Tween open the interface
-function DialogController:OpenScreen(dialogTree: dialogTree)
+function NPCDialog:OpenScreen(dialogTree: dialogTree)
 	print("opening screen while currentTree is:", dialogTree)
-	self.instance.Parent = root
-	ProximityPromptService.Enabled = false
+	self.instance.Parent = self.root
 
 	local slideIn = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 1) })
 
@@ -109,22 +101,16 @@ function DialogController:OpenScreen(dialogTree: dialogTree)
 end
 
 -- Tween close the interface
-function DialogController:CloseDialogScreen()
+function NPCDialog:CloseDialogScreen()
 	local slideOut = TweenService:Create(self.instance, slideInfo, { AnchorPoint = Vector2.new(0, 0) })
 
 	slideOut.Completed:Connect(function()
+		self.instance.Parent = script
 		clearCurrentTree()
 	end)
 
-	ProximityPromptService.Enabled = true
-	npcBubblePart = nil
 	slideOut:Play()
 	print("return camera to normal")
 end
 
-function DialogController:KnitStart()
-	local Interface = Knit.GetController("Interface")
-	root = Interface.root
-end
-
-return DialogController
+return NPCDialog

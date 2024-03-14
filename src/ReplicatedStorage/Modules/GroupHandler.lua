@@ -16,17 +16,17 @@ local GroupHandler = {
 -- If player is in Teutonnia group and on defenders team, return true
 function GroupHandler.isDefender(player: Player) end
 
--- Returns a promise which calls GetGroupsAsync on the player
-function GroupHandler:GetGroups(player: Player)
-	local success, result = pcall(function()
+-- Uses promise which calls GetGroupsAsync on the player
+function GroupHandler:GetGroupsAsync(player: Player)
+	local worked, groupResult = Promise.try(function()
 		return GroupService:GetGroupsAsync(player.UserId)
-	end)
+	end):await()
 
-	if not success then
-		return warn(result)
+	if not worked then
+		error(groupResult)
 	end
 
-	return result
+	return groupResult
 end
 
 return GroupHandler

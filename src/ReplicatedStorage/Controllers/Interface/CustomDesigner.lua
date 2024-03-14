@@ -16,15 +16,15 @@ local EquippedList = {} -- a list of all the currently equipped items
 local currentSelected = {} -- it was either this, or attributes. chose this since it requires lil less overhead. give it a shot if you wanna try a diff way
 local root = nil
 
-local CustomController = {
-	Name = "CustomController",
+local CustomDesigner = {
+	Name = "CustomDesigner",
 }
-CustomController.instance = script.CustomGui
+CustomDesigner.instance = script.CustomGui
 
 function CreateCategoryOption(name: string)
 	local category = CategoryPrefab:Clone()
 	category.Text = name
-	category.Parent = CustomController.instance.CategoryFrame
+	category.Parent = CustomDesigner.instance.CategoryFrame
 
 	local openTween = TweenService:Create(category.ScrollingFrame, slideInfo, { Size = UDim2.new(1, 0, 4, 0) })
 
@@ -48,17 +48,17 @@ end
 function CreateOption(name: string)
 	local category = OptionPrefab:Clone()
 	category.Text = name
-	category.Parent = CustomController.instance.CategoryFrame
+	category.Parent = CustomDesigner.instance.CategoryFrame
 
 	return category
 end
 
-function CustomController.openFromNPC()
+function CustomDesigner.openFromNPC()
 	print("open from npc")
-	CustomController:ToggleOpen(true)
+	CustomDesigner:ToggleOpen(true)
 end
 
-function CustomController:ToggleOpen(open: boolean)
+function CustomDesigner:ToggleOpen(open: boolean)
 	if open then
 		self.instance.Parent = root
 	else
@@ -67,7 +67,7 @@ function CustomController:ToggleOpen(open: boolean)
 	end
 end
 
-function CustomController:KnitStart()
+function CustomDesigner:KnitStart()
 	local Interface = Knit.GetController("Interface")
 	root = Interface.root
 
@@ -128,4 +128,4 @@ function CustomController:KnitStart()
 	end)
 end
 
-return CustomController
+return CustomDesigner
