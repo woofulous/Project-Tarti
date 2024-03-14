@@ -215,7 +215,13 @@ function DataHandler:Set(player: Player, scope: string, value: any?)
 end
 
 -- a promise which awaits until it has started
-function DataHandler.WaitForSaveReady() end
+function DataHandler:WaitForSaveReady()
+	if self.SaveReady then
+		return
+	else
+		self._onSaveReady:Wait()
+	end
+end
 
 function DataHandler:KnitInit()
 	if isStudio then
@@ -245,7 +251,9 @@ function DataHandler:KnitInit()
 		end
 	end)
 
-	self.SaveReady = true
+	self._onSaveReady:Once(function()
+		self.SaveReady = true
+	end)
 end
 
 return DataHandler

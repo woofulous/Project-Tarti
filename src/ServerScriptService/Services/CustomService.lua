@@ -278,7 +278,7 @@ function CustomService:SetCustomization(player: Player)
 	print("cloning & parenting all items in CustomizationList to the player:", player)
 end
 
-function CustomService:KnitInit()
+function CustomService:KnitStart()
 	-- Categorize all of the accessories in storage. Forewarning; CustomCategory should be the EXACT name as the export type CustomizationKind
 	for _, customCategory in pairs(CustomizationFolder:GetChildren()) do
 		local customGroup = {} -- This is the "Hair" or "Helmet" folder, broken down
