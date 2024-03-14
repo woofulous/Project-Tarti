@@ -23,6 +23,7 @@ local DATA_TEMPLATE = {
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Promise = require(ReplicatedStorage.Packages.Promise)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 local safePlayerAdded = require(ReplicatedStorage.Utility.safePlayerAdded)
 
 local experienceStore = game:GetService("DataStoreService"):GetDataStore("ExperienceData")
@@ -38,6 +39,7 @@ local DataHandler = {
 }
 DataHandler.GameData = {} :: GameData
 DataHandler.SaveReady = false
+DataHandler._onSaveReady = Signal.new()
 
 -- Returns a Promise to GetAsync of player's data
 function GetPlayerData(player: Player)
@@ -169,13 +171,16 @@ end
 function DataHandler:Get(player: Player, scope: string)
 	assert(self.SaveReady, "Trying to :Get while not SaveReady")
 
-	local playerStore: PlayerStore = self.GameData[player.UserId]
-	do
+	local playerData: PlayerStore = self.GameData[player.UserId].Data
+
+	if playerData then
 		if scope then
-			return playerStore.Data[scope] or warn("Could not find PlayerData scope:", scope)
+			return playerData[scope] or warn("Could not find PlayerData scope:", scope)
 		end
 
-		return playerStore.Data
+		return playerData
+	else
+		warn("Could not Get PlayerData:", player)
 	end -- if not, no data to get
 end
 
@@ -209,6 +214,9 @@ function DataHandler:Set(player: Player, scope: string, value: any?)
 	end
 end
 
+-- a promise which awaits until it has started
+function DataHandler.WaitForSaveReady() end
+
 function DataHandler:KnitInit()
 	if isStudio then
 		warn("DataHandler will not save in Studio. Session data will be lost.")
@@ -222,7 +230,6 @@ function DataHandler:KnitInit()
 	safePlayerAdded(self.initializePlayerAsync, self.closePlayerDataAsync)
 
 	-- Start saving
-	self.SaveReady = true
 	task.spawn(function()
 		while self.SaveReady and task.wait(SAVE_INCREMENT) do
 			for _, player in Players:GetPlayers() do
@@ -237,6 +244,8 @@ function DataHandler:KnitInit()
 			SavePlayerData(player)
 		end
 	end)
+
+	self.SaveReady = true
 end
 
 return DataHandler

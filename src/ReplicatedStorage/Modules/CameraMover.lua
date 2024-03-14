@@ -21,14 +21,14 @@ function CameraMover.TweenCameraToPart(
 		Players.LocalPlayer:RequestStreamAroundAsync(desiredPart.Position, yield_timeout)
 	end
 
-	local tween = TweenService:Create(Camera, tweenInfo, { desiredPart.CFrame })
+	local tween = TweenService:Create(Camera, tweenInfo, { CFrame = desiredPart.CFrame })
 	tween:Play()
 
 	return tween
 end
 
 -- sets camera.cframe to the part's, if replication yield, will yield to stream around point
-function CameraMover.CFrameCameraToPart(desiredPart: Part, replication_yield: boolean?, yield_timeout: number?)
+function CameraMover.CFrameCameraToPart(desiredPart: BasePart, replication_yield: boolean?, yield_timeout: number?)
 	if replication_yield then
 		Players.LocalPlayer:RequestStreamAroundAsync(desiredPart.Position, yield_timeout)
 	end
