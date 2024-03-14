@@ -15,10 +15,12 @@ local PlayerCycle = {
 function PlayerCycle:KnitStart()
 	local DataHandler = Knit.GetService("DataHandler")
 
-	local isNewPlayer = DataHandler.Get("FirstTimePlayer") -- cannot refer to self, on client
+	local isNewPlayer = DataHandler:Get("FirstTimePlayer") -- cannot refer to self, on client
 	if isNewPlayer then
+		print("player is new! cinematic starting")
 		local IntroCinematic = Knit.GetController("IntroCinematic")
-		IntroCinematic:PlayCinematic() --:await() -- returns promise
+		IntroCinematic:PlayCinematic():await() -- returns promise
+		print("cinematic over. all resolved. start menu")
 	end
 
 	local MenuScreen = Knit.GetController("MenuScreen")

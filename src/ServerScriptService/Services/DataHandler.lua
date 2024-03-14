@@ -87,9 +87,10 @@ end
 
 -- client methods
 
-function DataHandler.Client.Get(player: Player, scope: any)
+function DataHandler.Client:Get(player: Player, scope: any)
+	print(player, scope)
 	if typeof(scope) ~= "string" or not DATA_TEMPLATE[scope] then
-		return warn(player.UserId, "tried to Get with incorrect arguments. Suspicious behavior")
+		error(player.UserId .. " tried to Get with incorrect arguments. Suspicious behavior")
 	end
 
 	return DataHandler:Get(player, scope)
@@ -104,51 +105,54 @@ function DataHandler.initializePlayerAsync(player: Player)
 	playerStore.UserId = player.UserId
 	playerStore.Data = {} -- initiate as a blank table
 
-	GetPlayerData(player):andThen(function(gotData: {})
-		print("set data to:", gotData)
-		playerStore.Data = gotData
-	end):catch(function(err)
-		warn("Error in GetPlayerData: (", err, ") Setting to default")
-		playerStore.Data = DATA_TEMPLATE
-	end)
-
-	if #playerStore.Data == 0 then
-		print("PlayerData empty, setting to default")
-		playerStore.Data = DATA_TEMPLATE
-	end
-
-	--[[Ensure PlayerData is correct]]
 	local hadToCorrectData = false
-	if type(playerStore.Data) ~= "table" then
-		warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
-		hadToCorrectData = true
-		playerStore.Data = DATA_TEMPLATE
-	end
+	GetPlayerData(player)
+		:andThen(function(gotData: {})
+			print("set data to:", gotData)
+			if gotData == nil then
+				print("PlayerData empty, setting to default")
+				hadToCorrectData = true
+				playerStore.Data = DATA_TEMPLATE
+			else
+				--[[Ensure PlayerData is correct]]
+				if type(playerStore.Data) ~= "table" then
+					warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
+					hadToCorrectData = true
+					playerStore.Data = DATA_TEMPLATE
+					return
+				end
 
-	for dataKey: string, _ in playerStore.Data do
-		if not DATA_TEMPLATE[dataKey] then
-			warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
-			hadToCorrectData = true
-			playerStore.Data[dataKey] = nil
-		end
-	end
-	print(playerStore.Data)
-	for templateKey, templateValue: any in DATA_TEMPLATE do
-		if not playerStore.Data[templateKey] then
-			print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
-			hadToCorrectData = true
-			playerStore.Data[templateKey] = templateValue
-		end
-	end
-	--[[]]
+				for dataKey: string, _ in playerStore.Data do
+					if not DATA_TEMPLATE[dataKey] then
+						warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
+						hadToCorrectData = true
+						playerStore.Data[dataKey] = nil
+					end
+				end
+				print(playerStore.Data)
+				for templateKey, templateValue: any in DATA_TEMPLATE do
+					if not playerStore.Data[templateKey] then
+						print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
+						hadToCorrectData = true
+						playerStore.Data[templateKey] = templateValue
+					end
+				end
+				--[[]]
+			end
+		end)
+		:andThen(function()
+			DataHandler.GameData[player.UserId] = playerStore
+			print("Initialized PlayerStore for", player)
 
-	DataHandler.GameData[player.UserId] = playerStore
-	print("Initialized PlayerStore for", player)
-
-	if hadToCorrectData then
-		print("Saving corrected data")
-		SavePlayerData(player)
-	end
+			if hadToCorrectData then
+				print("Saving corrected data")
+				SavePlayerData(player)
+			end
+		end)
+		:catch(function(err)
+			warn("Error in GetPlayerData: (" .. err .. ") Setting to default")
+			playerStore.Data = DATA_TEMPLATE
+		end)
 end
 
 -- Returns promise to save player's data
@@ -162,9 +166,9 @@ function DataHandler.closePlayerData(player: Player)
 		return warn("Game data does not exist for", player.Name)
 	end
 
-	SavePlayerData(player)
-
-	DataHandler.GameData[player.UserId] = nil
+	DataHandler.promiseSaveData(player):andThen(function()
+		DataHandler.GameData[player.UserId] = nil
+	end)
 end
 
 -- Return the player's data based on the scope. If no scope is specified, return the entire Data table.
@@ -196,9 +200,7 @@ function DataHandler:Update(player: Player, scope: string, returnFn: (oldValue: 
 	assert(self.SaveReady, "Trying to :Update while not SaveReady")
 
 	local currentStore = self:Get(player, scope)
-	do
-		self.GameData[player.UserId].Data[scope] = returnFn(currentStore)
-	end
+	self.GameData[player.UserId].Data[scope] = returnFn(currentStore)
 
 	return false -- failed to update
 end
@@ -254,6 +256,8 @@ function DataHandler:KnitInit()
 	self._onSaveReady:Once(function()
 		self.SaveReady = true
 	end)
+
+	self._onSaveReady:Fire()
 end
 
 return DataHandler

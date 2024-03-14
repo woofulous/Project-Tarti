@@ -63,8 +63,11 @@ function IntroCinematic:PlayCinematic()
 		cameraPromise:cancel() -- cancel the cinematic camera tween
 	end)
 
-	cameraPromise:await() -- they've skipped the cinematic, or theres no more to play.
-	print("all resolved. start menu")
+	cameraPromise:andThen(function() -- they've skipped the cinematic, or theres no more to play.
+		self.instance.Parent = script -- remove screen
+	end)
+	-- print("all resolved. start menu")
+	return cameraPromise
 end
 
 return IntroCinematic
