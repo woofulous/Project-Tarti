@@ -8,9 +8,6 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 
-local CinematicCameraFolder = game:GetService("Workspace").Studio:WaitForChild("CinematicCamera")
-local cameraInfo = TweenInfo.new(10)
-
 local IntroCinematic = {
 	Name = "IntroCinematic",
 }
@@ -29,6 +26,12 @@ function PanThroughFolder(folder: Folder)
 			if not IntroCinematic.playing then
 				print("broke! skipped")
 			end
+			local cameraInfo = TweenInfo.new(
+				cameraModel:GetAttribute("Duration") or 5, -- default time if no duration
+				Enum.EasingStyle.Linear,
+				Enum.EasingDirection.Out
+			)
+
 			local startPart = cameraModel:FindFirstChild("Start")
 			local endPart = cameraModel:FindFirstChild("End")
 			print(cameraModel, "playing!")
@@ -43,16 +46,16 @@ function PanThroughFolder(folder: Folder)
 	end)
 end
 
-function IntroCinematic:PlayCinematic()
+function IntroCinematic:PlayCinematic(cinematicCameraFolder: Folder)
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 
 	self.playing = true
 	self.instance.Parent = self.root -- root is passed after interface is invoked
 
-	CinematicCameraFolder.ChildAdded:Wait() -- wait for the folder to begin replicating
+	-- CinematicCameraFolder.ChildAdded:Wait() -- wait for the folder to begin replicating. we dont need this as long as we ensure the model's streaming is set to "Persistent"
 
 	local disconnectSkip: RBXScriptConnection
-	local cameraPromise = PanThroughFolder(CinematicCameraFolder):andThen(function()
+	local cameraPromise = PanThroughFolder(cinematicCameraFolder):andThen(function()
 		print("promise has resolved, things have finished!")
 		disconnectSkip:Disconnect() -- disconnect the opportunity to skip
 	end)
@@ -63,11 +66,12 @@ function IntroCinematic:PlayCinematic()
 		cameraPromise:cancel() -- cancel the cinematic camera tween
 	end)
 
-	cameraPromise:andThen(function() -- they've skipped the cinematic, or theres no more to play.
+	cameraPromise:finally(function() -- they've skipped the cinematic, or theres no more to play.
 		self.instance.Parent = script -- remove screen
 	end)
+
 	-- print("all resolved. start menu")
-	return cameraPromise
+	return cameraPromise -- return promise to allow :await() to be used
 end
 
 return IntroCinematic

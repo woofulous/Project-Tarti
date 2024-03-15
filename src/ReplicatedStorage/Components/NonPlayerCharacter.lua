@@ -125,7 +125,7 @@ function NonPlayerCharacter:Construct()
 end
 
 function NonPlayerCharacter:Start()
-	local NPCDialog = Knit.NPCDialog("NPCDialog")
+	local NPCDialog = Knit.GetController("NPCDialog")
 
 	self.prompt.Triggered:Connect(function() -- main startup for npcs
 		if not self.hasSpokenCooldown then

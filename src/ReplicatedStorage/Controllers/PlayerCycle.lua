@@ -8,6 +8,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
+local Studio = game:GetService("Workspace").Studio
+
 local PlayerCycle = {
 	Name = "PlayerCycle",
 }
@@ -17,14 +19,19 @@ function PlayerCycle:KnitStart()
 
 	local isNewPlayer = DataHandler:Get("FirstTimePlayer") -- cannot refer to self, on client
 	if isNewPlayer then
-		print("player is new! cinematic starting")
 		local IntroCinematic = Knit.GetController("IntroCinematic")
-		IntroCinematic:PlayCinematic():await() -- returns promise
+		local IntroCamera = Studio.Cinematics:WaitForChild("IntroCamera")
+
+		print("player is new! cinematic starting")
+		IntroCinematic:PlayCinematic(IntroCamera):await() -- returns promise
 		print("cinematic over. all resolved. start menu")
 	end
 
 	local MenuScreen = Knit.GetController("MenuScreen")
-	MenuScreen.startAsync()
+	MenuScreen:ToggleVisible(true)
+	MenuScreen.startCameraPanningPromise():finally(function()
+		MenuScreen:ToggleVisible(false)
+	end)
 end
 
 return PlayerCycle
