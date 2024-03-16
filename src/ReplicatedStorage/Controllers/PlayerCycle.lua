@@ -17,7 +17,7 @@ local PlayerCycle = {
 function PlayerCycle:KnitStart()
 	local DataHandler = Knit.GetService("DataHandler")
 
-	local isNewPlayer = DataHandler:Get("FirstTimePlayer") -- cannot refer to self, on client
+	local isNewPlayer = DataHandler:Get("FirstTimePlayer")
 	if isNewPlayer then
 		local IntroCinematic = Knit.GetController("IntroCinematic")
 		local IntroCamera = Studio.Cinematics:WaitForChild("IntroCamera")

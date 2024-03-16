@@ -5,25 +5,20 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Knit = require(ReplicatedStorage.Packages.Knit)
 local Promise = require(ReplicatedStorage.Packages.Promise)
 
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 
 local MenuCameraFolder = game:GetService("Workspace").Studio.Cinematics:WaitForChild("MenuCamera")
-local cameraPromise = nil --: promiseobject
+local selectedTeam: string -- team name
+local cameraPromise --: promiseobject
 
 local MenuScreen = {
 	Name = "MenuScreen",
 }
 MenuScreen.instance = script.MenuFrame
 MenuScreen.backgroundRunning = false
-
-local function playGame()
-	assert(cameraPromise, "No Promise started")
-
-	cameraPromise:cancel() -- we close the background camera
-	MenuScreen.instance.Parent = script -- hide the screen
-end
 
 function PromiseBackgroundPanning()
 	local tipLabel = MenuScreen.instance:FindFirstChild("TipLabel") :: TextLabel
@@ -80,10 +75,44 @@ function MenuScreen.startCameraPanningPromise()
 end
 
 function MenuScreen:KnitInit() -- connect our connections
-	local MainActions = self.instance:FindFirstChild("Main"):FindFirstChild("Actions") :: Frame
+	local DataHandler = Knit.GetService("DataHandler")
+	local CoreLoop = Knit.GetService("CoreLoop") -- server has already started. no need to call these in :start
 
-	local playButton = MainActions:FindFirstChild("Play") :: TextButton
-	playButton.Activated:Connect(playGame)
+	local RuleFrame = self.instance:FindFirstChild("Rules") :: Frame
+	local MainFrame = self.instance:FindFirstChild("Main") :: Frame
+
+	local _, hasAgreedToRules = DataHandler:Get("AgreedToRules"):catch(warn):await()
+	print(hasAgreedToRules)
+	if not hasAgreedToRules then
+		RuleFrame.Visible = true
+
+		RuleFrame.AcceptButton.Activated:Once(function()
+			CoreLoop.PlayerAgreedToRules:Fire()
+			RuleFrame.Visible = false
+			MainFrame.Visible = true
+		end)
+	else
+		RuleFrame.Visible = false
+		MainFrame.Visible = true
+	end
+
+	local TeamFrame = self.instance:FindFirstChild("TeamSelect") :: Frame
+	TeamFrame.Return.Activated:Connect(function()
+		TeamFrame.Visible = false
+		MainFrame.Visible = true
+	end)
+
+	local MainActions = self.instance:FindFirstChild("Main"):FindFirstChild("Actions") :: Frame
+	MainActions.Play.Activated:Connect(function()
+		if cameraPromise and cameraPromise.Status == "Running" then
+			cameraPromise:cancel() -- we close the background camera and stop self.backgroundRunning
+		end
+
+		MainFrame.Visible = false
+		TeamFrame.Visible = true
+
+		-- MenuScreen.instance.Parent = script -- hide the screen
+	end)
 end
 
 return MenuScreen

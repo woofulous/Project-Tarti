@@ -18,6 +18,7 @@ local DATA_TEMPLATE = {
 	Guns = {},
 
 	FirstTimePlayer = true,
+	AgreedToRules = false,
 }
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -88,8 +89,8 @@ end
 -- client methods
 
 function DataHandler.Client:Get(player: Player, scope: any)
-	print(player, scope)
-	if typeof(scope) ~= "string" or not DATA_TEMPLATE[scope] then
+	print(player, scope, print(typeof(scope), DATA_TEMPLATE[scope]))
+	if typeof(scope) ~= "string" or DATA_TEMPLATE[scope] == nil then
 		error(player.UserId .. " tried to Get with incorrect arguments. Suspicious behavior")
 	end
 
@@ -108,46 +109,45 @@ function DataHandler.initializePlayerAsync(player: Player)
 	local hadToCorrectData = false
 	GetPlayerData(player)
 		:andThen(function(gotData: {})
-			print("set data to:", gotData)
 			if gotData == nil then
-				print("PlayerData empty, setting to default")
+			print("PlayerData empty, setting to default")
+			hadToCorrectData = true
+			playerStore.Data = DATA_TEMPLATE
+		else
+			--[[Ensure PlayerData is correct]]
+			if type(playerStore.Data) ~= "table" then
+				warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
 				hadToCorrectData = true
 				playerStore.Data = DATA_TEMPLATE
-			else
-				--[[Ensure PlayerData is correct]]
-				if type(playerStore.Data) ~= "table" then
-					warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
-					hadToCorrectData = true
-					playerStore.Data = DATA_TEMPLATE
-					return
-				end
-
-				for dataKey: string, _ in playerStore.Data do
-					if not DATA_TEMPLATE[dataKey] then
-						warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
-						hadToCorrectData = true
-						playerStore.Data[dataKey] = nil
-					end
-				end
-				print(playerStore.Data)
-				for templateKey, templateValue: any in DATA_TEMPLATE do
-					if not playerStore.Data[templateKey] then
-						print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
-						hadToCorrectData = true
-						playerStore.Data[templateKey] = templateValue
-					end
-				end
-				--[[]]
+				return
 			end
+
+			for dataKey: string, _ in playerStore.Data do
+				if not DATA_TEMPLATE[dataKey] then
+					warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
+					hadToCorrectData = true
+					playerStore.Data[dataKey] = nil
+				end
+			end
+			print(playerStore.Data)
+			for templateKey, templateValue: any in DATA_TEMPLATE do
+				if not playerStore.Data[templateKey] then
+					print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
+					hadToCorrectData = true
+					playerStore.Data[templateKey] = templateValue
+				end
+			end
+			--[[]]
+		end
 		end)
 		:andThen(function()
 			DataHandler.GameData[player.UserId] = playerStore
 			print("Initialized PlayerStore for", player)
 
 			if hadToCorrectData then
-				print("Saving corrected data")
-				SavePlayerData(player)
-			end
+			print("Saving corrected data")
+			SavePlayerData(player)
+		end
 		end)
 		:catch(function(err)
 			warn("Error in GetPlayerData: (" .. err .. ") Setting to default")
@@ -179,7 +179,11 @@ function DataHandler:Get(player: Player, scope: string)
 
 	if playerData then
 		if scope then
-			return playerData[scope] or warn("Could not find PlayerData scope:", scope)
+			if playerData[scope] == nil then
+				return warn("Could not find PlayerData scope:", scope)
+			else
+				return playerData[scope]
+			end
 		end
 
 		return playerData

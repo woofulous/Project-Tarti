@@ -32,6 +32,12 @@ Knit.Start({
 				return true
 			end,
 		},
+		Outbound = {
+			function(player: Player, args)
+				print(player, "is receiving args from server:", args)
+				return true
+			end,
+		},
 	},
 })
 	:catch(warn)
