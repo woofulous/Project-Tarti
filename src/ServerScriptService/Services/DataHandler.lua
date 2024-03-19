@@ -42,6 +42,10 @@ DataHandler.GameData = {} :: GameData
 DataHandler.SaveReady = false
 DataHandler._onSaveReady = Signal.new()
 
+function GetPlayerStore(player: Player)
+	return DataHandler.GameData[player.UserId]
+end
+
 -- Returns a Promise to GetAsync of player's data
 function GetPlayerData(player: Player)
 	return Promise.new(function(resolve, reject)
@@ -65,7 +69,7 @@ function SavePlayerData(player: Player)
 		return warn("Tried to SavePlayerData, but cannot in Studio!")
 	end
 
-	local playerStore = DataHandler.GameData[player.UserId]
+	local playerStore = GetPlayerStore(player)
 
 	if playerStore then
 		return Promise.new(function(resolve, reject)
@@ -100,7 +104,7 @@ end
 -- Fetch the player's data, reconcile "out of line" data and add player to GameData to be used
 function DataHandler.initializePlayerAsync(player: Player)
 	assert(DataHandler.SaveReady, "Save not ready!")
-	assert(not DataHandler.GameData[player.UserId], "PlayerData already loaded!")
+	assert(not GetPlayerStore(player), "PlayerData already loaded!")
 
 	local playerStore = {} :: PlayerStore
 	playerStore.UserId = player.UserId
@@ -110,44 +114,44 @@ function DataHandler.initializePlayerAsync(player: Player)
 	GetPlayerData(player)
 		:andThen(function(gotData: {})
 			if gotData == nil then
-			print("PlayerData empty, setting to default")
-			hadToCorrectData = true
-			playerStore.Data = DATA_TEMPLATE
-		else
-			--[[Ensure PlayerData is correct]]
-			if type(playerStore.Data) ~= "table" then
-				warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
+				print("PlayerData empty, setting to default")
 				hadToCorrectData = true
 				playerStore.Data = DATA_TEMPLATE
-				return
-			end
+			else
+				--[[Ensure PlayerData is correct]]
+				if type(playerStore.Data) ~= "table" then
+					warn("Unexpected data type retrieved from DataStore:", playerStore.Data)
+					hadToCorrectData = true
+					playerStore.Data = DATA_TEMPLATE
+					return
+				end
 
-			for dataKey: string, _ in playerStore.Data do
-				if not DATA_TEMPLATE[dataKey] then
-					warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
-					hadToCorrectData = true
-					playerStore.Data[dataKey] = nil
+				for dataKey: string, _ in playerStore.Data do
+					if not DATA_TEMPLATE[dataKey] then
+						warn("Unexpected key in PlayerStore:", dataKey, "- removing unwanted data")
+						hadToCorrectData = true
+						playerStore.Data[dataKey] = nil
+					end
 				end
-			end
-			print(playerStore.Data)
-			for templateKey, templateValue: any in DATA_TEMPLATE do
-				if not playerStore.Data[templateKey] then
-					print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
-					hadToCorrectData = true
-					playerStore.Data[templateKey] = templateValue
+				print(playerStore.Data)
+				for templateKey, templateValue: any in DATA_TEMPLATE do
+					if not playerStore.Data[templateKey] then
+						print("Filling PlayerStore data with DATA_TEMPLATE gap:", templateKey)
+						hadToCorrectData = true
+						playerStore.Data[templateKey] = templateValue
+					end
 				end
+				--[[]]
 			end
-			--[[]]
-		end
 		end)
 		:andThen(function()
 			DataHandler.GameData[player.UserId] = playerStore
 			print("Initialized PlayerStore for", player)
 
 			if hadToCorrectData then
-			print("Saving corrected data")
-			SavePlayerData(player)
-		end
+				print("Saving corrected data")
+				SavePlayerData(player)
+			end
 		end)
 		:catch(function(err)
 			warn("Error in GetPlayerData: (" .. err .. ") Setting to default")
@@ -162,7 +166,7 @@ end
 
 -- Save player data then remove them from GameData
 function DataHandler.closePlayerData(player: Player)
-	if not DataHandler.GameData[player.UserId] then
+	if not GetPlayerStore(player) then
 		return warn("Game data does not exist for", player.Name)
 	end
 
@@ -175,18 +179,18 @@ end
 function DataHandler:Get(player: Player, scope: string)
 	assert(self.SaveReady, "Trying to :Get while not SaveReady")
 
-	local playerData: PlayerStore = self.GameData[player.UserId].Data
+	local playerStore: PlayerStore = GetPlayerStore(player)
 
-	if playerData then
+	if playerStore then
 		if scope then
-			if playerData[scope] == nil then
+			if playerStore.Data[scope] == nil then
 				return warn("Could not find PlayerData scope:", scope)
 			else
-				return playerData[scope]
+				return playerStore.Data[scope]
 			end
 		end
 
-		return playerData
+		return playerStore.Data
 	else
 		warn("Could not Get PlayerData:", player)
 	end -- if not, no data to get

@@ -8,22 +8,28 @@ local LoadingModule = require(script.LoadingModule) -- includes the LoadingScree
 
 function PreGameLoaded()
 	game:GetService("ReplicatedFirst"):RemoveDefaultLoadingScreen()
+	LoadingModule.setMaxProgressIndex(3)
 	LoadingModule:ToggleVisible(true)
-	LoadingModule:UpdateStatusText("Waiting for game")
+	LoadingModule:UpdateProgressIndex(0, "Waiting for game")
+	--task.wait(2)
 
 	if not game:IsLoaded() then
 		game.Loaded:Wait()
 	end
 
-	LoadingModule:UpdateStatusText("Waiting for framework")
+	LoadingModule:UpdateProgressIndex(1, "Waiting for framework")
 	LoadingModule.awaitForKnit()
+	--task.wait(2)
 end
 
 function PostTasksComplete()
-	LoadingModule:UpdateStatusText("Preloading assets")
+	LoadingModule:UpdateProgressIndex(2, "Preloading assets")
 	LoadingModule.startPreloadingAsync() -- begin the skippable preload process
+	--task.wait(2)
 
 	print("Loading has completed!")
+	LoadingModule:UpdateProgressIndex(3, "Finishing")
+	--task.wait(2)
 	LoadingModule:ToggleVisible(false)
 end
 

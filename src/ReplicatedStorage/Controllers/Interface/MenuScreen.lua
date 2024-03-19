@@ -21,7 +21,7 @@ MenuScreen.instance = script.MenuFrame
 MenuScreen.backgroundRunning = false
 
 function PromiseBackgroundPanning()
-	local tipLabel = MenuScreen.instance:FindFirstChild("TipLabel") :: TextLabel
+	local tipLabel = MenuScreen.instance.TipFrame:FindFirstChild("TipLabel") :: TextLabel
 	local cameraTween: Tween
 	MenuScreen.backgroundRunning = true -- start the loop
 
@@ -43,8 +43,8 @@ function PromiseBackgroundPanning()
 				local endPart = cameraFolder:FindFirstChild("End")
 				print(cameraFolder, "playing!")
 
-				CameraMover.CFrameCameraToPart(startPart)
-				cameraTween = CameraMover.TweenCameraToPart(endPart, cameraInfo, true, 1) -- we decrease the streaming wait a lot in comparison to the introcinematic since we need these things to be playing 24/7
+				CameraMover:CFrameCameraToPart(startPart)
+				cameraTween = CameraMover:TweenCameraToPart(endPart, cameraInfo, true, 1) -- we decrease the streaming wait a lot in comparison to the cinematiccamera since we need these things to be playing 24/7
 				cameraTween.Completed:Wait()
 				print("completed!")
 				task.wait(1) -- time between each background transition
@@ -78,8 +78,8 @@ function MenuScreen:KnitInit() -- connect our connections
 	local DataHandler = Knit.GetService("DataHandler")
 	local CoreLoop = Knit.GetService("CoreLoop") -- server has already started. no need to call these in :start
 
-	local RuleFrame = self.instance:FindFirstChild("Rules") :: Frame
-	local MainFrame = self.instance:FindFirstChild("Main") :: Frame
+	local RuleFrame = self.instance:FindFirstChild("Rules") :: ImageLabel
+	local MainFrame = self.instance:FindFirstChild("Main") :: ImageLabel
 
 	local _, hasAgreedToRules = DataHandler:Get("AgreedToRules"):catch(warn):await()
 	print(hasAgreedToRules)
@@ -88,6 +88,7 @@ function MenuScreen:KnitInit() -- connect our connections
 
 		RuleFrame.AcceptButton.Activated:Once(function()
 			CoreLoop.PlayerAgreedToRules:Fire()
+			self.instance.TipFrame.Visible = true
 			RuleFrame.Visible = false
 			MainFrame.Visible = true
 		end)
@@ -102,8 +103,7 @@ function MenuScreen:KnitInit() -- connect our connections
 		MainFrame.Visible = true
 	end)
 
-	local MainActions = self.instance:FindFirstChild("Main"):FindFirstChild("Actions") :: Frame
-	MainActions.Play.Activated:Connect(function()
+	MainFrame.Play.Activated:Connect(function()
 		if cameraPromise and cameraPromise.Status == "Running" then
 			cameraPromise:cancel() -- we close the background camera and stop self.backgroundRunning
 		end

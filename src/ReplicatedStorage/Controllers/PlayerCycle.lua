@@ -19,11 +19,11 @@ function PlayerCycle:KnitStart()
 
 	local isNewPlayer = DataHandler:Get("FirstTimePlayer")
 	if isNewPlayer then
-		local IntroCinematic = Knit.GetController("IntroCinematic")
+		local CinematicCamera = Knit.GetController("CinematicCamera")
 		local IntroCamera = Studio.Cinematics:WaitForChild("IntroCamera")
 
 		print("player is new! cinematic starting")
-		IntroCinematic:PlayCinematic(IntroCamera):await() -- returns promise
+		CinematicCamera:PlayCinematic(IntroCamera):await() -- returns promise
 		print("cinematic over. all resolved. start menu")
 	end
 
