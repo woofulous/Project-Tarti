@@ -13,11 +13,14 @@ type dialogTree = {
 
 local TweenService = game:GetService("TweenService")
 local TextChatService = game:GetService("TextChatService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
+local PlayerCycle: any -- we will assign this as the PlayerCycle controller when :KnitStart
 
 local choicePrefab = script.DialogChoiceButton :: TextButton
 local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
+local cancelTickFn: () -> () -- this is called to get rid of the tick which we use to determine how far the player is from the npc
 
 local npcBubblePart: BasePart
 
@@ -27,6 +30,12 @@ local NPCDialog = {
 NPCDialog.instance = script.DialogFrame
 NPCDialog._buttons = {}
 
+local function clearCurrentTree()
+	for _, button: TextButton in NPCDialog._buttons do
+		button:Destroy()
+	end
+end
+
 function CreateChoiceButton(text: string, callback: () -> ())
 	local button = choicePrefab:Clone()
 	button.Text = text
@@ -35,12 +44,6 @@ function CreateChoiceButton(text: string, callback: () -> ())
 	table.insert(NPCDialog._buttons, button)
 	button.Parent = NPCDialog.instance.ChoiceOptions
 	return button
-end
-
-local function clearCurrentTree()
-	for _, button: TextButton in NPCDialog._buttons do
-		button:Destroy()
-	end
 end
 
 local function fillChoiceTree(tree: dialogTree)
@@ -80,13 +83,24 @@ local function fillChoiceTree(tree: dialogTree)
 	end)
 end
 
+-- start waiting for the player to be far away from the npc to close up the dialog
+function SetupDistanceTick(pointPosition: Vector3, max_distance: number)
+	cancelTickFn = PlayerCycle:OnClientTick(function() -- this is called to get rid of the tick
+		if Knit.Player:DistanceFromCharacter(pointPosition) > max_distance then -- this threshold is based on the dialog maxconversationdistance property
+			NPCDialog:CloseDialogScreen()
+			cancelTickFn()
+		end
+	end)
+end
+
 -- Hides all prompts & springs the camera to the set NPC. Yields until completion
-function NPCDialog.speakToNPCAsync(npc: Model, dialogTree: dialogTree)
+function NPCDialog.speakToNPCAsync(npc: Model, dialogTree: dialogTree, max_distance: number)
 	print("speak to npc:", npc)
 	assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
 	npcBubblePart = npc.PrimaryPart
 
 	NPCDialog:OpenScreen(dialogTree)
+	SetupDistanceTick(npc.PrimaryPart.Position, max_distance)
 end
 
 -- Tween open the interface
@@ -98,6 +112,7 @@ function NPCDialog:OpenScreen(dialogTree: dialogTree)
 
 	fillChoiceTree(dialogTree)
 	slideIn:Play()
+	ProximityPromptService.Enabled = false
 end
 
 -- Tween close the interface
@@ -110,7 +125,12 @@ function NPCDialog:CloseDialogScreen()
 	end)
 
 	slideOut:Play()
+	ProximityPromptService.Enabled = true
 	print("return camera to normal")
+end
+
+function NPCDialog:KnitStart()
+	PlayerCycle = Knit.GetController("PlayerCycle")
 end
 
 return NPCDialog

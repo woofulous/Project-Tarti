@@ -2,6 +2,7 @@
 	The local player's "CoreLoop"
 	Contain all instances related to the player and character to be used throughout the experience
 	This helps track instances to be deleted when the player encounters events like death, respawn, etc
+	Lucereus 03/20/2024
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +14,14 @@ local Studio = game:GetService("Workspace").Studio
 local PlayerCycle = {
 	Name = "PlayerCycle",
 }
+PlayerCycle.trackedFn = {} -- these are called each task.wait second
+PlayerCycle.TickRunning = false
+
+function CallTrackedFunctions()
+	for _, tickFn: () -> () in PlayerCycle.trackedFn do
+		task.defer(tickFn) -- push each tick function to a new thread. this makes it so the script will not yield to fire each of these functions, running synchronously
+	end
+end
 
 function PlayerCycle:KnitStart()
 	local DataHandler = Knit.GetService("DataHandler")
@@ -32,6 +41,21 @@ function PlayerCycle:KnitStart()
 	MenuScreen.startCameraPanningPromise():finally(function()
 		MenuScreen:ToggleVisible(false)
 	end)
+
+	-- start client tick
+	self.TickRunning = true
+	while self.TickRunning and task.wait(math.random(1, 2)) do -- 1, 2 is the random threshold between each tick
+		task.defer(CallTrackedFunctions) -- push it to a separate thread
+	end
+end
+
+function PlayerCycle:OnClientTick(fn: () -> ()) -- onCancel, cancels the tick from the loop
+	table.insert(self.trackedFn, fn)
+	local fnIndex = #self.trackedFn
+
+	return function()
+		self.trackedFn[fnIndex] = nil
+	end
 end
 
 return PlayerCycle

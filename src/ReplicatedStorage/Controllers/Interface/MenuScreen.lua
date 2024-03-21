@@ -81,6 +81,8 @@ function MenuScreen:KnitInit() -- connect our connections
 	local RuleFrame = self.instance:FindFirstChild("Rules") :: ImageLabel
 	local MainFrame = self.instance:FindFirstChild("Main") :: ImageLabel
 
+	MainFrame.PlaceVersion.Text = string.format("Version %s", game.PlaceVersion)
+
 	local _, hasAgreedToRules = DataHandler:Get("AgreedToRules"):catch(warn):await()
 	print(hasAgreedToRules)
 	if not hasAgreedToRules then

@@ -129,10 +129,11 @@ function NonPlayerCharacter:Start()
 
 	self.prompt.Triggered:Connect(function() -- main startup for npcs
 		if not self.hasSpokenCooldown then
-			NPCDialog.speakToNPCAsync(self.Instance, self.dialogTree)
-
 			self.hasSpokenCooldown = true
 			self.prompt.Enabled = false
+			NPCDialog.speakToNPCAsync(self.Instance, self.dialogTree, self.prompt.MaxActivationDistance)
+
+			-- handle talk cooldown
 			task.wait(TALK_COOLDOWN)
 			self.hasSpokenCooldown = false
 			self.prompt.Enabled = true
