@@ -3,11 +3,37 @@
 	Lucereus 03/13/2024
 ]]
 
+export type CameraSequence = Model & {
+	Start: BasePart,
+	End: BasePart,
+}
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
+local CurrentTween: Tween
+
 local CameraMover = {}
 CameraMover.camera = game:GetService("Workspace").CurrentCamera
+
+local function clearCurrentTween()
+	if CurrentTween then
+		CurrentTween:Cancel()
+	end
+end
+
+-- Pass a Model which includes a Start and End BasePart to tween between
+function CameraMover:PanToCameraSequence(
+	cameraSequence: CameraSequence,
+	cameraInfo: TweenInfo,
+	replication_yield: boolean?,
+	yield_timeout: number?
+)
+	clearCurrentTween()
+	self:CFrameCameraToPart(cameraSequence.Start)
+	CurrentTween = self:TweenCameraToPart(cameraSequence.End, cameraInfo, replication_yield, yield_timeout)
+	return CurrentTween
+end
 
 -- You can pass :GetChildren() and it will work as intended. if replication yield, will async stream around point
 function CameraMover:TweenCameraToPart(

@@ -14,7 +14,6 @@ local OptionPrefab = script.OptionTemplate :: TextButton
 
 local EquippedList = {} -- a list of all the currently equipped items
 local currentSelected = {} -- it was either this, or attributes. chose this since it requires lil less overhead. give it a shot if you wanna try a diff way
-local root = nil
 
 local CustomDesigner = {
 	Name = "CustomDesigner",
@@ -60,7 +59,7 @@ end
 
 function CustomDesigner:ToggleOpen(open: boolean)
 	if open then
-		self.instance.Parent = root
+		self.instance.Parent = self.root
 	else
 		ProximityPromptService.Enabled = true
 		self.instance.Parent = script
@@ -68,9 +67,6 @@ function CustomDesigner:ToggleOpen(open: boolean)
 end
 
 function CustomDesigner:KnitStart()
-	local Interface = Knit.GetController("Interface")
-	root = Interface.root
-
 	local CustomService = Knit.GetService("CustomService")
 
 	local success, result = CustomService:GetCurrentCustomization():await()

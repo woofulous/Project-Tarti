@@ -11,7 +11,7 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 
 local MenuCameraFolder = game:GetService("Workspace").Studio.Cinematics:WaitForChild("MenuCamera")
-local selectedTeam: string -- team name
+-- local selectedTeam: string -- team name
 local cameraPromise --: promiseobject
 
 local MenuScreen = {
@@ -62,6 +62,10 @@ function MenuScreen:ToggleVisible(visible: boolean)
 	if visible then
 		self.instance.Parent = self.root
 	else
+		if cameraPromise then
+			cameraPromise:cancel() -- we close the background camera and stop self.backgroundRunning
+		end
+
 		self.instance.Parent = script -- hide it
 	end
 end
@@ -105,16 +109,35 @@ function MenuScreen:KnitInit() -- connect our connections
 		MainFrame.Visible = true
 	end)
 
-	MainFrame.Play.Activated:Connect(function()
-		if cameraPromise and cameraPromise.Status == "Running" then
-			cameraPromise:cancel() -- we close the background camera and stop self.backgroundRunning
+	-- setup team selection
+	for _, teamButton: ImageButton in TeamFrame.TeamList:GetChildren() do
+		if teamButton:IsA("ImageButton") then
+			teamButton.Activated:Connect(function() -- the button's name dictates the team it will switch to
+				self.SwitchTeamToOverhead(teamButton.Name)
+			end)
 		end
+	end
 
+	MainFrame.Play.Activated:Connect(function()
 		MainFrame.Visible = false
 		TeamFrame.Visible = true
-
-		-- MenuScreen.instance.Parent = script -- hide the screen
 	end)
+end
+
+function MenuScreen:KnitStart()
+	local TeamService = Knit.GetService("TeamService")
+	local OverheadSpawner = Knit.GetController("OverheadSpawner")
+
+	function self.SwitchTeamToOverhead(desired_team: string) -- switch team, then transition to overhead spawning
+		TeamService:SwitchTeam(desired_team):andThen(function(hasSwitched: boolean)
+			if hasSwitched then
+				self:ToggleVisible(false)
+				OverheadSpawner:OpenFromMenu()
+			else
+				print("cannot switch to team; not permitted")
+			end
+		end)
+	end
 end
 
 return MenuScreen
