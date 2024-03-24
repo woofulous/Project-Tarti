@@ -37,7 +37,7 @@ function PlayerCycle:KnitStart()
 	end
 
 	local MenuScreen = Knit.GetController("MenuScreen")
-	MenuScreen:ToggleVisible(true)
+	MenuScreen:ToggleVisible(true) -- this basically starts the whole thing. everything else is on an "oninvoke" basis
 	MenuScreen.startCameraPanningPromise():finally(function()
 		MenuScreen:ToggleVisible(false)
 	end)

@@ -64,22 +64,26 @@ function CinematicCamera:PlayCinematic(cinematicCameraFolder: Folder)
 	-- end)
 
 	cameraPromise:finally(function() -- they've skipped the cinematic, or theres no more to play.
+		self.playing = false
 		self.instance.Parent = script -- remove screen
 	end)
 
+	-- tween the visibility of the button to be usable
 	local skipTween = TweenCreator.TweenTo(
-		self.instance.ButtonGroup,
-		TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, SKIP_BUTTON_AVAILABLE),
-		{ GroupTransparency = 0 }
+		self.instance.ButtonGroup, -- the instance
+		TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, SKIP_BUTTON_AVAILABLE), -- the tweeninfo
+		{ GroupTransparency = 0 } -- the goal
 	)
 	skipTween:andThen(function()
-		self.instance.ButtonGroup.SkipButton.Activated:Once(function()
-			self.playing = false
-			cameraPromise:cancel() -- cancel the cinematic camera tween
-		end)
+		print("I've completed!")
+		self.instance.ButtonGroup.SkipButton.Active = true
 	end)
 
-	-- tween the visibility of the button to be usable
+	self.instance.ButtonGroup.SkipButton.Activated:Once(function()
+		if self.playing then
+			cameraPromise:cancel() -- cancel the cinematic camera tween
+		end
+	end)
 
 	-- print("all resolved. start menu")
 	return cameraPromise -- return promise to allow :await() to be used

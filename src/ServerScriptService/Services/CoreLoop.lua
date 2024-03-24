@@ -12,7 +12,6 @@ local CoreLoop = {
 	Name = "CoreLoop",
 	Client = {
 		PlayerAgreedToRules = Knit.CreateSignal(),
-		LoadCharacter = Knit.CreateSignal(),
 	},
 }
 
@@ -29,11 +28,6 @@ function CoreLoop:KnitStart()
 
 	self.Client.PlayerAgreedToRules:Connect(function(player: Player)
 		DataHandler:Set(player, "AgreedToRules", true)
-	end)
-
-	self.Client.LoadCharacter:Connect(function(player: Player)
-		-- TODO* some checks like ensuring the player hasn't exceeding a certain call threshold, etc
-		player:LoadCharacter()
 	end)
 
 	safePlayerAdded(playerAdded, playerRemoving)

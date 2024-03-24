@@ -78,7 +78,11 @@ local function processChoice(choice: DialogChoice)
 end
 
 function NonPlayerCharacter:Construct()
-	assert(self.Instance.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
+	if not self.Instance.PrimaryPart then
+		warn("THIS NPC **NEEDS** A PRIMARY PART, WAITING FOR ONE. Instance:", self.Instance)
+		self.Instance:GetPropertyChangedSignal("PrimaryPart"):Wait()
+		print("found it finally thank gott")
+	end
 
 	self.prompt = self.Instance:FindFirstChildOfClass("ProximityPrompt") :: ProximityPrompt
 	self.hasSpokenCooldown = false

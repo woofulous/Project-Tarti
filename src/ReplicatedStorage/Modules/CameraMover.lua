@@ -16,7 +16,7 @@ local CurrentTween: Tween
 local CameraMover = {}
 CameraMover.camera = game:GetService("Workspace").CurrentCamera
 
-local function clearCurrentTween()
+function ClearCurrentTween()
 	if CurrentTween then
 		CurrentTween:Cancel()
 	end
@@ -29,7 +29,7 @@ function CameraMover:PanToCameraSequence(
 	replication_yield: boolean?,
 	yield_timeout: number?
 )
-	clearCurrentTween()
+	ClearCurrentTween()
 	self:CFrameCameraToPart(cameraSequence.Start)
 	CurrentTween = self:TweenCameraToPart(cameraSequence.End, cameraInfo, replication_yield, yield_timeout)
 	return CurrentTween
@@ -47,6 +47,7 @@ function CameraMover:TweenCameraToPart(
 	end
 
 	local tween = TweenService:Create(self.camera, tweenInfo, { CFrame = desiredPart.CFrame })
+	ClearCurrentTween()
 	tween:Play()
 
 	return tween

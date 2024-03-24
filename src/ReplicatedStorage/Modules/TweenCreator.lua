@@ -11,15 +11,17 @@ local TweenCreator = {}
 
 -- tween the object in a promise. resolves on completion
 function TweenCreator.TweenTo(instance: Instance, goalInfo: TweenInfo, goal: {})
-	local tween: Tween
-
 	return Promise.new(function(resolve, _, onCancel)
+		local resolveScriptConnection: RBXScriptConnection
+		local tween: Tween
+
 		onCancel(function()
+			resolveScriptConnection:Disconnect()
 			tween:Cancel()
 		end)
 
 		tween = TweenService:Create(instance, goalInfo, goal)
-		tween.Completed:Once(resolve)
+		resolveScriptConnection = tween.Completed:Once(resolve)
 		tween:Play()
 	end)
 end

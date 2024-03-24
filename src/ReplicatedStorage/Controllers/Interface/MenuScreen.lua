@@ -11,7 +11,7 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 
 local MenuCameraFolder = game:GetService("Workspace").Studio.Cinematics:WaitForChild("MenuCamera")
--- local selectedTeam: string -- team name
+local canUseButtons = false
 local cameraPromise --: promiseobject
 
 local MenuScreen = {
@@ -60,6 +60,7 @@ end
 -- Play the sliding tween for the UI after parenting instance to root
 function MenuScreen:ToggleVisible(visible: boolean)
 	if visible then
+		canUseButtons = true
 		self.instance.Parent = self.root
 	else
 		if cameraPromise then
@@ -84,6 +85,7 @@ function MenuScreen:KnitInit() -- connect our connections
 
 	local RuleFrame = self.instance:FindFirstChild("Rules") :: ImageLabel
 	local MainFrame = self.instance:FindFirstChild("Main") :: ImageLabel
+	local TipFrame = self.instance:FindFirstChild("TipFrame") :: ImageLabel
 
 	MainFrame.PlaceVersion.Text = string.format("Version %s", game.PlaceVersion)
 
@@ -94,7 +96,7 @@ function MenuScreen:KnitInit() -- connect our connections
 
 		RuleFrame.AcceptButton.Activated:Once(function()
 			CoreLoop.PlayerAgreedToRules:Fire()
-			self.instance.TipFrame.Visible = true
+			TipFrame.Visible = true
 			RuleFrame.Visible = false
 			MainFrame.Visible = true
 		end)
@@ -105,20 +107,26 @@ function MenuScreen:KnitInit() -- connect our connections
 
 	local TeamFrame = self.instance:FindFirstChild("TeamSelect") :: Frame
 	TeamFrame.Return.Activated:Connect(function()
-		TeamFrame.Visible = false
-		MainFrame.Visible = true
+		if canUseButtons then
+			TipFrame.Visible = false
+			TeamFrame.Visible = false
+			MainFrame.Visible = true
+		end
 	end)
 
 	-- setup team selection
 	for _, teamButton: ImageButton in TeamFrame.TeamList:GetChildren() do
 		if teamButton:IsA("ImageButton") then
 			teamButton.Activated:Connect(function() -- the button's name dictates the team it will switch to
-				self.SwitchTeamToOverhead(teamButton.Name)
+				if canUseButtons then
+					self.SwitchTeamToOverhead(teamButton.Name)
+				end
 			end)
 		end
 	end
 
 	MainFrame.Play.Activated:Connect(function()
+		TipFrame.Visible = false
 		MainFrame.Visible = false
 		TeamFrame.Visible = true
 	end)
@@ -127,12 +135,17 @@ end
 function MenuScreen:KnitStart()
 	local TeamService = Knit.GetService("TeamService")
 	local OverheadSpawner = Knit.GetController("OverheadSpawner")
+	local TransitionFade = Knit.GetController("TransitionFade")
 
 	function self.SwitchTeamToOverhead(desired_team: string) -- switch team, then transition to overhead spawning
 		TeamService:SwitchTeam(desired_team):andThen(function(hasSwitched: boolean)
 			if hasSwitched then
-				self:ToggleVisible(false)
-				OverheadSpawner:OpenFromMenu()
+				canUseButtons = false
+				TransitionFade:TweenVisible(true):andThen(function()
+					self:ToggleVisible(false)
+					OverheadSpawner:OpenFromMenu()
+					TransitionFade:TweenVisible(false)
+				end)
 			else
 				print("cannot switch to team; not permitted")
 			end
