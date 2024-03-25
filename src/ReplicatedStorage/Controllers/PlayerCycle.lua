@@ -42,6 +42,14 @@ function PlayerCycle:KnitStart()
 		MenuScreen:ToggleVisible(false)
 	end)
 
+	local HeadUpDisplay = Knit.GetController("HeadUpDisplay")
+	-- connect char events
+	Knit.Player.CharacterAdded:Connect(function(character: Model)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+		HeadUpDisplay.ConnectToHumanoid(humanoid)
+	end)
+
 	-- start client tick
 	self.TickRunning = true
 	while self.TickRunning and task.wait(math.random(1, 2)) do -- 1, 2 is the random threshold between each tick

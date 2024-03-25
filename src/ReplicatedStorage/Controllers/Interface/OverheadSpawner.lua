@@ -44,16 +44,19 @@ function OverheadSpawner:OpenFromMenu()
 
 	-- set current sequence to that player's "home spawn" for raiders this would be "raider spawn", teutonnians "teutonnia spawn"
 	currentSequence = SpawnFolder["Castle"].CameraSequence
+	previousStartSequence = currentSequence.Start
 
 	CameraMover:PanToCameraSequence(currentSequence, PanInfo, true, 3)
 end
 
 function OverheadSpawner:KnitStart()
-	local TransitionFade = Knit.GetController("TransitionFade")
 	local SpawnService = Knit.GetService("SpawnService")
+	local TransitionFade = Knit.GetController("TransitionFade")
+	local SoundPlayer = Knit.GetController("SoundPlayer")
 
 	local deployButton = self.instance:FindFirstChild("Deploy") :: ImageButton
 	deployButton.Activated:Connect(function()
+		SoundPlayer.PlayRandomSound("Interface", "ButtonClick")
 		CameraMover:TweenCameraToPart(previousStartSequence, RiseInfo)
 
 		TransitionFade:TweenVisible(true):andThen(function()
@@ -72,7 +75,9 @@ function OverheadSpawner:KnitStart()
 		spawnButton.Name = spawnPoint.Name
 
 		spawnButton.Activated:Connect(function() -- transition the page to the selected one
-			if previousStartSequence == currentSequence.Start then
+			SoundPlayer.PlayRandomSound("Interface", "ButtonClick")
+
+			if currentSequence == spawnPoint.CameraSequence then
 				return -- this prevents player clicking the same option a bunch of times if its already selected :)
 			end
 
@@ -102,7 +107,7 @@ function OverheadSpawner:KnitStart()
 		end
 
 		-- play rise tween and fade
-		local riseTween = CameraMover:TweenCameraToPart(previousStartSequence, RiseInfo) -- rise the tween to the start position -- when the visibility has completely finished, start to pan down and get rid of the transition
+		local riseTween = CameraMover:TweenCameraToPart(currentSequence.Start, RiseInfo) -- rise the tween to the start position -- when the visibility has completely finished, start to pan down and get rid of the transition
 
 		TransitionFade:TweenVisible(true):andThen(function()
 			riseTween:Cancel() -- we dont really care if this actually finishes because you wont even be able to see it finish when your screen is blocked out by the fade
