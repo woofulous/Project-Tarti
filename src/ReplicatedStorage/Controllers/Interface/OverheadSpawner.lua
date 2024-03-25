@@ -20,7 +20,7 @@ local currentSequence: CameraMover.CameraSequence
 local previousStartSequence: BasePart -- we cache this so we can rise away when the player selects a new sequence
 local selected_point_name: string -- dont think this will work amazing, but just make sure the points all have separate names so they dont get mixed up. we pass this value to teamhandler to decide where the player should spawn
 
-type PointModel = Model & {
+type PointModel = any & {
 	CameraSequence: CameraMover.CameraSequence,
 	SpawnParts: Model & { BasePart? }, -- a table of baseparts to spawn on
 }
@@ -52,14 +52,12 @@ end
 function OverheadSpawner:KnitStart()
 	local SpawnService = Knit.GetService("SpawnService")
 	local TransitionFade = Knit.GetController("TransitionFade")
-	local SoundPlayer = Knit.GetController("SoundPlayer")
 
 	local deployButton = self.instance:FindFirstChild("Deploy") :: ImageButton
 	deployButton.Activated:Connect(function()
-		SoundPlayer.PlayRandomSound("Interface", "ButtonClick")
-		CameraMover:TweenCameraToPart(previousStartSequence, RiseInfo)
-
-		TransitionFade:TweenVisible(true):andThen(function()
+		CameraMover:TweenCameraToPart(currentSequence.Start, RiseInfo)
+		-- heres the example usage of ZindexOverride! we make it 1 more than the zindex of overhead spawner's instance so it goes over it :)
+		TransitionFade:TweenVisible(true, 2):andThen(function()
 			SpawnService:RequestSpawnAtPoint(selected_point_name)
 			TransitionFade:TweenVisible(false)
 			self.instance.Parent = script -- hide the screen
@@ -75,8 +73,6 @@ function OverheadSpawner:KnitStart()
 		spawnButton.Name = spawnPoint.Name
 
 		spawnButton.Activated:Connect(function() -- transition the page to the selected one
-			SoundPlayer.PlayRandomSound("Interface", "ButtonClick")
-
 			if currentSequence == spawnPoint.CameraSequence then
 				return -- this prevents player clicking the same option a bunch of times if its already selected :)
 			end
@@ -106,14 +102,20 @@ function OverheadSpawner:KnitStart()
 			currentlyTweening = true
 		end
 
+		deployButton.Active = false
+		deployButton.Visible = false
+
 		-- play rise tween and fade
-		local riseTween = CameraMover:TweenCameraToPart(currentSequence.Start, RiseInfo) -- rise the tween to the start position -- when the visibility has completely finished, start to pan down and get rid of the transition
+		local riseTween = CameraMover:TweenCameraToPart(previousStartSequence, RiseInfo) -- rise the tween to the start position -- when the visibility has completely finished, start to pan down and get rid of the transition
 
 		TransitionFade:TweenVisible(true):andThen(function()
 			riseTween:Cancel() -- we dont really care if this actually finishes because you wont even be able to see it finish when your screen is blocked out by the fade
 			CameraMover:PanToCameraSequence(currentSequence, PanInfo, true, 3)
 			TransitionFade:TweenVisible(false)
-			currentlyTweening = false
+
+			deployButton.Active = true -- reenable the deploy button
+			deployButton.Visible = true
+			currentlyTweening = false -- reallow all these operations to happen again :3
 		end)
 	end)
 end

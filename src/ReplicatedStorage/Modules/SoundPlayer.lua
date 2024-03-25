@@ -5,11 +5,11 @@
 
 local SoundService = game:GetService("SoundService")
 
-local SoundPlayer = {
-	Name = "SoundPlayer",
-}
+local randomSpeed = Random.new()
 
-function GetRandomSound(tbl: {})
+local SoundPlayer = {}
+
+function GetRandomSound(tbl: {}): Sound
 	return tbl[math.random(1, #tbl)]
 end
 
@@ -21,6 +21,7 @@ function SoundPlayer.PlayRandomSound(group: string, sound_name: string)
 
 		if soundOrGroup:IsA("SoundGroup") then
 			soundOrGroup = GetRandomSound(soundOrGroup:GetChildren())
+			soundOrGroup.PlaybackSpeed = randomSpeed:NextNumber(0.75, 1.25) -- this adds even more randomness, ontop of the random sounds
 		end
 
 		soundOrGroup:Play()

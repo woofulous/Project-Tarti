@@ -12,7 +12,7 @@ local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 
 local MenuCameraFolder = game:GetService("Workspace").Studio.Cinematics:WaitForChild("MenuCamera")
 local canUseButtons = false
-local cameraPromise --: promiseobject
+local cameraPromise --: promise
 
 local MenuScreen = {
 	Name = "MenuScreen",

@@ -3,7 +3,7 @@
 	Lucereus 03/13/2024
 ]]
 
-export type CameraSequence = Model & {
+export type CameraSequence = any & {
 	Start: BasePart,
 	End: BasePart,
 }

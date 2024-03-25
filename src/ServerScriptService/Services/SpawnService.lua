@@ -20,7 +20,7 @@ SpawnService.Points = {} :: { SpawnPoint } -- this encompasses both capture and 
 -- the player's character. promises are synchronous. so they're pushed to a new thread, with no yielding :)
 function PromisePlayerCharacter(player: Player) --: promiseobject
 	return Promise.new(function(resolve)
-		player.CharacterAppearanceLoaded:Once(resolve) -- since the character has now fully loaded, we can pass it through resolve.
+		player.CharacterAppearanceLoaded:Once(resolve) -- appearanceloaded passes character thru >:3 we yield the promise until the char is ready until the character is fully loaded, we pass it through resolve
 		player:LoadCharacter() -- this readies for the appearanceloaded event
 	end)
 end
