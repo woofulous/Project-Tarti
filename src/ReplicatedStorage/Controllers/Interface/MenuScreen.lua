@@ -9,6 +9,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Promise = require(ReplicatedStorage.Packages.Promise)
 
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
+local SoundPlayer = require(ReplicatedStorage.Modules.SoundPlayer)
 
 local MenuCameraFolder = game:GetService("Workspace").Studio.Cinematics:WaitForChild("MenuCamera")
 local canUseButtons = false
@@ -61,12 +62,14 @@ end
 function MenuScreen:ToggleVisible(visible: boolean)
 	if visible then
 		canUseButtons = true
+		SoundPlayer.TransitionMusicTheme("Menu")
 		self.instance.Parent = self.root
 	else
 		if cameraPromise then
 			cameraPromise:cancel() -- we close the background camera and stop self.backgroundRunning
 		end
 
+		SoundPlayer.TransitionMusicTheme(nil)
 		self.instance.Parent = script -- hide it
 	end
 end

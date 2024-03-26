@@ -27,27 +27,40 @@ function PlayerCycle:KnitStart()
 	local DataHandler = Knit.GetService("DataHandler")
 
 	local isNewPlayer = DataHandler:Get("FirstTimePlayer")
+	local TransitionFade = Knit.GetController("TransitionFade")
 	if isNewPlayer then
 		local CinematicCamera = Knit.GetController("CinematicCamera")
 		local IntroCamera = Studio.Cinematics:WaitForChild("IntroCamera")
 
 		print("player is new! cinematic starting")
 		CinematicCamera:PlayCinematic(IntroCamera):await() -- returns promise
+		TransitionFade:TweenVisible(true):await()
+		CinematicCamera.hideScreen()
+		TransitionFade:TweenVisible(false)
 		print("cinematic over. all resolved. start menu")
 	end
 
 	local MenuScreen = Knit.GetController("MenuScreen")
+	MenuScreen.startCameraPanningPromise()
 	MenuScreen:ToggleVisible(true) -- this basically starts the whole thing. everything else is on an "oninvoke" basis
-	MenuScreen.startCameraPanningPromise():finally(function()
-		MenuScreen:ToggleVisible(false)
-	end)
 
 	local HeadUpDisplay = Knit.GetController("HeadUpDisplay")
+	local ZoneSystem = Knit.GetController("ZoneSystem")
+	local SoundPlayer = require(ReplicatedStorage.Modules.SoundPlayer)
 	-- connect char events
 	Knit.Player.CharacterAdded:Connect(function(character: Model)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 
 		HeadUpDisplay.ConnectToHumanoid(humanoid)
+		ZoneSystem.StartRenderStep(humanoid.RootPart)
+
+		humanoid.Died:Once(function()
+			ZoneSystem.UnbindFromRender(humanoid.RootPart)
+
+			SoundPlayer.TransitionMusicTheme("Death")
+		end)
+
+		SoundPlayer.TransitionMusicTheme("Ambient")
 	end)
 
 	-- start client tick

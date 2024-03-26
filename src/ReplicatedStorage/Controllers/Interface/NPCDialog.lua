@@ -16,7 +16,6 @@ local TextChatService = game:GetService("TextChatService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
-local PlayerCycle: any -- we will assign this as the PlayerCycle controller when :KnitStart
 
 local choicePrefab = script.DialogChoiceButton :: TextButton
 local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
@@ -83,26 +82,6 @@ local function fillChoiceTree(tree: dialogTree)
 	end)
 end
 
--- start waiting for the player to be far away from the npc to close up the dialog
-function SetupDistanceTick(pointPosition: Vector3, max_distance: number)
-	cancelTickFn = PlayerCycle:OnClientTick(function() -- this is called to get rid of the tick
-		if Knit.Player:DistanceFromCharacter(pointPosition) > max_distance then -- this threshold is based on the dialog maxconversationdistance property
-			NPCDialog:CloseDialogScreen()
-			cancelTickFn()
-		end
-	end)
-end
-
--- Hides all prompts & springs the camera to the set NPC. Yields until completion
-function NPCDialog.speakToNPCAsync(npc: Model, dialogTree: dialogTree, max_distance: number)
-	print("speak to npc:", npc)
-	assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
-	npcBubblePart = npc.PrimaryPart
-
-	NPCDialog:OpenScreen(dialogTree)
-	SetupDistanceTick(npc.PrimaryPart.Position, max_distance)
-end
-
 -- Tween open the interface
 function NPCDialog:OpenScreen(dialogTree: dialogTree)
 	print("opening screen while currentTree is:", dialogTree)
@@ -124,13 +103,29 @@ function NPCDialog:CloseDialogScreen()
 		clearCurrentTree()
 	end)
 
+	cancelTickFn()
 	slideOut:Play()
 	ProximityPromptService.Enabled = true
 	print("return camera to normal")
 end
 
 function NPCDialog:KnitStart()
-	PlayerCycle = Knit.GetController("PlayerCycle")
+	local PlayerCycle = Knit.GetController("PlayerCycle")
+
+	-- Hides all prompts & springs the camera to the set NPC. Yields until completion
+	function self.speakToNPCAsync(npc: Model, dialogTree: dialogTree, max_distance: number)
+		print("speak to npc:", npc)
+		assert(npc.PrimaryPart, "THIS NPC **NEEDS** A PRIMARY PART")
+
+		npcBubblePart = npc.PrimaryPart
+		cancelTickFn = PlayerCycle:OnClientTick(function() -- this is called to get rid of the tick
+			if Knit.Player:DistanceFromCharacter(npcBubblePart.Position) > max_distance then -- this threshold is based on the dialog maxconversationdistance property
+				NPCDialog:CloseDialogScreen() -- start waiting for the player to be far away from the npc to close up the dialog
+			end
+		end)
+
+		NPCDialog:OpenScreen(dialogTree)
+	end
 end
 
 return NPCDialog

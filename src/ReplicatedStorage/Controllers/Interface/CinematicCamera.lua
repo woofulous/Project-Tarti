@@ -10,6 +10,9 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 
 local CameraMover = require(ReplicatedStorage.Modules.CameraMover)
 local TweenCreator = require(ReplicatedStorage.Modules.TweenCreator)
+local SoundPlayer = require(ReplicatedStorage.Modules.SoundPlayer)
+
+local SubtitleFadeInfo = TweenInfo.new(3)
 
 local CinematicCamera = {
 	Name = "CinematicCamera",
@@ -39,9 +42,13 @@ function PanThroughFolder(folder: Folder)
 			local endPart = cameraModel:FindFirstChild("End")
 			print(cameraModel, "playing!")
 
+			CinematicCamera.instance.SubtitleGroup.SubtitleLabel.Text = cameraModel:GetAttribute("Subtitle")
+			TweenCreator.TweenTo(CinematicCamera.instance.SubtitleGroup, SubtitleFadeInfo, { GroupTransparency = 0 })
+
 			CameraMover:CFrameCameraToPart(startPart, true, 3) -- streams around start
 			cameraTween = CameraMover:TweenCameraToPart(endPart, cameraInfo, true, 3) -- yields to stream around .end | we can put a faded screen here, then on the next line unfade it since it has loaded and is playing
 			cameraTween.Completed:Wait() -- yield until the tween has completed
+			CinematicCamera.instance.SubtitleGroup.GroupTransparency = 1
 			print("completed!")
 		end
 
@@ -65,7 +72,7 @@ function CinematicCamera:PlayCinematic(cinematicCameraFolder: Folder)
 
 	cameraPromise:finally(function() -- they've skipped the cinematic, or theres no more to play.
 		self.playing = false
-		self.instance.Parent = script -- remove screen
+		-- self.instance.Parent = script -- remove screen
 	end)
 
 	-- tween the visibility of the button to be usable
@@ -85,8 +92,13 @@ function CinematicCamera:PlayCinematic(cinematicCameraFolder: Folder)
 		end
 	end)
 
+	SoundPlayer.TransitionMusicTheme("Cinema")
 	-- print("all resolved. start menu")
 	return cameraPromise -- return promise to allow :await() to be used
+end
+
+function CinematicCamera.hideScreen()
+	CinematicCamera.instance.Parent = script
 end
 
 return CinematicCamera
