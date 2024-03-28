@@ -18,11 +18,15 @@ local CapturePoints = game:GetService("Workspace").Studio.CapturePoints
 local CaptureServer = {
 	Name = "CaptureServer",
 	Client = {
+		EnterPoint = Knit.CreateSignal(),
+		LeavePoint = Knit.CreateSignal(),
+
 		PointOfContention = Knit.CreateProperty("Castle"), -- this is the default point of contention at the start of the game
 		KingOfTheHill = Knit.CreateProperty(nil), -- no king
 		ContributingTeams = Knit.CreateProperty({}), -- the list of teams contributing to capture
 	},
 }
+CaptureServer.UpdatePool = {} -- a table of players which will be updated for capture signals
 CaptureServer.Progression = {
 	KingOfTheHill = "", -- the team which holds the most amount of contributors. when the progress threshold is met, this team will begin to eat off the progression of other teams
 	ContributingTeams = {}, -- a table of teams, which returns the number of contributers from said team, and the individual progress for that team
@@ -79,18 +83,28 @@ function UpdatePointProgress()
 		AddProgressToAllTeams()
 	end
 
-	CaptureServer.Client.ContributingTeams:Set(CaptureServer.Progression.ContributingTeams)
+	CaptureServer.Client.ContributingTeams:SetForList(
+		CaptureServer.UpdatePool,
+		CaptureServer.Progression.ContributingTeams
+	)
 end
-
--- The player is asking to enter the capture point. This is validated by the server by checking if the player is currently inside, among other checks. It also then categorizes the amount of opposing agents in a point.
-function CaptureServer.Client:EnterCapturePoint(player: Player) end
-
-function CaptureServer.Client:LeaveCapturePoint(player: Player) end
 
 function CaptureServer:KnitStart()
 	local CoreLoop = Knit.GetService("CoreLoop")
 
 	CoreLoop:OnServerTick(UpdatePointProgress)
+	-- The player is asking to enter the capture point. This is validated by the server by checking if the player is currently inside, among other checks. It also then categorizes the amount of opposing agents in a point.
+	self.Client.EnterPoint:Connect(function(player: Player)
+		table.insert(CaptureServer.UpdatePool, player)
+	end)
+
+	self.Client.LeavePoint:Connect(function(player: Player)
+		local keyIndex = table.find(CaptureServer.UpdatePool, player)
+
+		if keyIndex then
+			table.remove(CaptureServer.UpdatePool, keyIndex)
+		end
+	end)
 end
 
 return CaptureServer

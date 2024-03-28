@@ -2,6 +2,7 @@
 	This is the player's HUD (Head-up Display) which governs visible recreation of properties related to the character's humanoid, like health, stamina, etcetera.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -42,15 +43,31 @@ function TerminalLayout:TweenVisible(visible: true | false)
 	end
 end
 
-function TerminalLayout.RegisterCaptureZone(isInside: true | false)
-	inCaptureZone = isInside
-	TerminalLayout:UpdateCaptureGroup()
-end
-
 function TerminalLayout:KnitStart()
 	local CaptureServer = Knit.GetService("CaptureServer")
 
 	-- update the "point of contention"
+	CaptureServer.KingOfTheHill:Observe(function(team_name: string)
+		print(team_name)
+		if team_name == "" then
+			print("no king of the hill!")
+		elseif Knit.Player.Team.Name ~= team_name then
+			print("not owned!")
+		else
+			print("owned by the team")
+		end
+	end)
+
+	function self.RegisterCaptureZone(isInside: true | false)
+		inCaptureZone = isInside
+		TerminalLayout:UpdateCaptureGroup()
+
+		if isInside then
+			CaptureServer.EnterPoint:Fire()
+		else
+			CaptureServer.LeavePoint:Fire()
+		end
+	end
 end
 
 return TerminalLayout

@@ -20,33 +20,36 @@ local CinematicCamera = {
 CinematicCamera.instance = script.CinematicBars
 CinematicCamera.playing = false
 
-function PanThroughFolder(folder: Folder)
+function PanThroughFolder(folder: Folder | any) -- we prefer folders. | any has to be used cause funky typechecking
 	local cameraTween: Tween
 
 	return Promise.new(function(resolve, _, onCancel)
 		onCancel(function() -- if the promise is canceled, we close the tween
 			cameraTween:Cancel()
+			CinematicCamera.playing = false
 		end)
 
-		for _, cameraModel: Instance in folder:GetChildren() do -- while we are playing and the cinematic still has places to tween to
+		for _, cameraModel: CameraMover.CameraSequence in folder:GetChildren() do -- while we are playing and the cinematic still has places to tween to
 			if not CinematicCamera.playing then
 				print("broke! skipped")
+				break
 			end
-			local cameraInfo = TweenInfo.new(
-				cameraModel:GetAttribute("Duration") or 5, -- default time if no duration
-				Enum.EasingStyle.Linear,
-				Enum.EasingDirection.Out
-			)
-
-			local startPart = cameraModel:FindFirstChild("Start")
-			local endPart = cameraModel:FindFirstChild("End")
 			print(cameraModel, "playing!")
 
 			CinematicCamera.instance.SubtitleGroup.SubtitleLabel.Text = cameraModel:GetAttribute("Subtitle")
 			TweenCreator.TweenTo(CinematicCamera.instance.SubtitleGroup, SubtitleFadeInfo, { GroupTransparency = 0 })
 
-			CameraMover:CFrameCameraToPart(startPart, true, 3) -- streams around start
-			cameraTween = CameraMover:TweenCameraToPart(endPart, cameraInfo, true, 3) -- yields to stream around .end | we can put a faded screen here, then on the next line unfade it since it has loaded and is playing
+			CameraMover:CFrameCameraToPart(cameraModel.Start, true, 3) -- streams around start
+			cameraTween = CameraMover:TweenCameraToPart(
+				cameraModel.End,
+				TweenInfo.new(
+					cameraModel:GetAttribute("Duration") or 5, -- default time if no duration
+					Enum.EasingStyle.Linear,
+					Enum.EasingDirection.Out
+				),
+				true,
+				3
+			) -- yields to stream around .end | we can put a faded screen here, then on the next line unfade it since it has loaded and is playing
 			cameraTween.Completed:Wait() -- yield until the tween has completed
 			CinematicCamera.instance.SubtitleGroup.GroupTransparency = 1
 			print("completed!")
@@ -62,27 +65,14 @@ function CinematicCamera:PlayCinematic(cinematicCameraFolder: Folder)
 	self.playing = true
 	self.instance.Parent = self.root -- root is passed after interface is invoked
 
-	-- CinematicCameraFolder.ChildAdded:Wait() -- wait for the folder to begin replicating. we dont need this as long as we ensure the model's streaming is set to "Persistent"
-
-	-- local disconnectSkip: RBXScriptConnection
-	local cameraPromise = PanThroughFolder(cinematicCameraFolder) --:andThen(function()
-	-- print("promise has resolved, things have finished!")
-	-- disconnectSkip:Disconnect() -- disconnect the opportunity to skip
-	-- end)
-
-	cameraPromise:finally(function() -- they've skipped the cinematic, or theres no more to play.
-		self.playing = false
-		-- self.instance.Parent = script -- remove screen
-	end)
+	local cameraPromise = PanThroughFolder(cinematicCameraFolder)
 
 	-- tween the visibility of the button to be usable
-	local skipTween = TweenCreator.TweenTo(
-		self.instance.ButtonGroup, -- the instance
-		TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, SKIP_BUTTON_AVAILABLE), -- the tweeninfo
-		{ GroupTransparency = 0 } -- the goal
-	)
-	skipTween:andThen(function()
-		print("I've completed!")
+	TweenCreator.TweenTo(
+		self.instance.ButtonGroup,
+		TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, SKIP_BUTTON_AVAILABLE),
+		{ GroupTransparency = 0 }
+	):andThen(function()
 		self.instance.ButtonGroup.SkipButton.Active = true
 	end)
 
@@ -93,7 +83,6 @@ function CinematicCamera:PlayCinematic(cinematicCameraFolder: Folder)
 	end)
 
 	SoundPlayer.TransitionMusicTheme("Cinema")
-	-- print("all resolved. start menu")
 	return cameraPromise -- return promise to allow :await() to be used
 end
 

@@ -14,7 +14,6 @@ local CapturePoint = Component.new({
 })
 
 function CapturePoint:Start()
-	local CaptureServer = Knit.GetService("CaptureServer")
 	local ZoneSystem = Knit.GetController("ZoneSystem")
 	local TerminalLayout = Knit.GetController("TerminalLayout")
 
@@ -27,13 +26,11 @@ function CapturePoint:Start()
 	zone.PlayerEntered:Connect(function()
 		print("entered zone!")
 		TerminalLayout.RegisterCaptureZone(true)
-		CaptureServer.Client:EnterCapturePoint()
 	end)
 
 	zone.PlayerLeft:Connect(function()
 		print("left zone!")
 		TerminalLayout.RegisterCaptureZone(false)
-		CaptureServer.Client:LeaveCapturePoint()
 	end)
 end
 

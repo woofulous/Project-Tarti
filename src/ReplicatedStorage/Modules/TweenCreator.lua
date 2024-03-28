@@ -11,7 +11,7 @@ local TweenCreator = {}
 TweenCreator.ongoingTweens = {} -- categorize tweens based on the instance's name and values tweened. if the same instance is being tweened, then cancel. this prevents flickering
 
 -- tween the object in a promise. resolves on completion
-function TweenCreator.TweenTo(instance: Instance, goalInfo: TweenInfo, goal: {})
+function TweenCreator.TweenTo(instance: any, goalInfo: TweenInfo, goal: {})
 	local tweenCategoryPromise = TweenCreator[instance.Name]
 
 	if tweenCategoryPromise then
