@@ -12,6 +12,7 @@ local Component = require(ReplicatedStorage.Packages.Component)
 local TweenCreator = require(ReplicatedStorage.Modules.TweenCreator)
 local SoundPlayer = require(ReplicatedStorage.Modules.SoundPlayer)
 
+local occupiedZones = 0 -- used to ensure that if a player crosses into another zone, the left doesnt reset lighting
 local TransitionInfo = TweenInfo.new() -- the info passed when entering/leaving ambient zones
 local defaultLightingValues = {
 	Ambient = Lighting.Ambient,
@@ -40,21 +41,26 @@ function AmbientZone:Start()
 	}
 
 	local ZoneSystem = Knit.GetController("ZoneSystem")
-	print(self.Instance)
 	local zone = ZoneSystem.new({
 		Part = self.Instance,
 		Type = "Part",
 	})
 
 	zone.PlayerEntered:Connect(function()
+		print(occupiedZones)
+		occupiedZones += 1
+
 		TweenCreator.TweenTo(Lighting, TransitionInfo, configValues)
-		SoundPlayer.TransitionMusicTheme(music_theme)
+		task.defer(SoundPlayer.TransitionMusicTheme, music_theme)
 	end)
 
 	zone.PlayerLeft:Connect(function()
-		if not ZoneSystem.IsInAnyZone() then
+		print(occupiedZones)
+		occupiedZones -= 1
+
+		if occupiedZones <= 0 then
 			TweenCreator.TweenTo(Lighting, TransitionInfo, defaultLightingValues)
-			SoundPlayer.TransitionMusicTheme(SoundPlayer.DefaultTheme)
+			task.defer(SoundPlayer.TransitionMusicTheme, SoundPlayer.DefaultTheme)
 		end
 	end)
 end

@@ -8,15 +8,21 @@ local TweenService = game:GetService("TweenService")
 local Promise = require(game:GetService("ReplicatedStorage").Packages.Promise)
 
 local TweenCreator = {}
+TweenCreator.ongoingTweens = {} -- categorize tweens based on the instance's name and values tweened. if the same instance is being tweened, then cancel. this prevents flickering
 
 -- tween the object in a promise. resolves on completion
 function TweenCreator.TweenTo(instance: Instance, goalInfo: TweenInfo, goal: {})
-	return Promise.new(function(resolve, _, onCancel)
-		local resolveScriptConnection: RBXScriptConnection
+	local tweenCategoryPromise = TweenCreator[instance.Name]
+
+	if tweenCategoryPromise then
+		tweenCategoryPromise:cancel()
+	end
+
+	local resolveScriptConnection: RBXScriptConnection
+	local tweenPromise = Promise.new(function(resolve, _, onCancel)
 		local tween: Tween
 
 		onCancel(function()
-			resolveScriptConnection:Disconnect()
 			tween:Cancel()
 		end)
 
@@ -24,6 +30,14 @@ function TweenCreator.TweenTo(instance: Instance, goalInfo: TweenInfo, goal: {})
 		resolveScriptConnection = tween.Completed:Once(resolve)
 		tween:Play()
 	end)
+
+	tweenPromise:finally(function()
+		TweenCreator[instance.Name] = nil
+		resolveScriptConnection:Disconnect()
+	end)
+
+	TweenCreator[instance.Name] = tweenPromise
+	return tweenPromise
 end
 
 return TweenCreator

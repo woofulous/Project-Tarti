@@ -46,6 +46,7 @@ function PlayerCycle:KnitStart()
 
 	local HeadUpDisplay = Knit.GetController("HeadUpDisplay")
 	local ZoneSystem = Knit.GetController("ZoneSystem")
+	local TerminalLayout = Knit.GetController("TerminalLayout")
 	local SoundPlayer = require(ReplicatedStorage.Modules.SoundPlayer)
 	-- connect char events
 	Knit.Player.CharacterAdded:Connect(function(character: Model)
@@ -53,9 +54,11 @@ function PlayerCycle:KnitStart()
 
 		HeadUpDisplay.ConnectToHumanoid(humanoid)
 		ZoneSystem.StartRenderStep(humanoid.RootPart)
+		TerminalLayout:TweenVisible(true)
 
 		humanoid.Died:Once(function()
 			ZoneSystem.UnbindFromRender(humanoid.RootPart)
+			TerminalLayout:TweenVisible(false)
 
 			SoundPlayer.TransitionMusicTheme("Death")
 		end)
